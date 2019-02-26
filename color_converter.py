@@ -15,7 +15,6 @@ def rgb01_to_rgb255(rgba):
     return [int(i * 255) for i in rgba]
 
 
-
 if __name__ == "__main__":
     color = [1, 0, 0]
     color_255 = rgb01_to_rgb255(color)

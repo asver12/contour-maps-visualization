@@ -13,11 +13,11 @@ def create_monochromatic_colorscheme(startcolor, levels):
     :return: colorarray with len(levels) + 1 entrys
     """
     norm_levels = np.linspace(0, 1, len(levels) + 1)
-    return [color_converter.rgb01_to_rgb255([startcolor[0], startcolor[1], startcolor[2], startcolor[3] - i]) for i in
+    return [color_converter.to_rgb([startcolor[0], startcolor[1], startcolor[2], startcolor[3]]) for i in
             norm_levels]
 
 
-def matplotlib_colorschemes(colorscheme, levels):
+def matplotlib_colorschemes(colorscheme, levels, lvl_white=1):
     """
     Generates a colorscheme from matplotlib
 
@@ -26,8 +26,14 @@ def matplotlib_colorschemes(colorscheme, levels):
     :return: colorarray with len(levels) + 1 entrys
     """
 
-    def reverse_alpha(color):
-        return color[0], color[1], color[2], color[3] - 255
+    # def reverse_alpha(color):
+    #     return color[0], color[1], color[2], color[3] - 255
 
-    return [reverse_alpha(color_converter.rgb01_to_rgb255(i)) for i in
+    # return [reverse_alpha(color_converter.to_rgb(i)) for i in
+    #         plt.cm.get_cmap(colorscheme)(np.linspace(0, 1, len(levels) + 1))]
+
+    color_scheme = [i for i in
             plt.cm.get_cmap(colorscheme)(np.linspace(0, 1, len(levels) + 1))]
+    for i in range(lvl_white+1):
+        color_scheme[i] = np.array([1., 1., 1., 1.])
+    return color_scheme
