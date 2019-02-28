@@ -35,6 +35,13 @@ def alpha_composing_specific(color_1, alpha_1, color_2, alpha_2, verbose=False):
     return color_1 * alpha_1 + color_2 * alpha_2
 
 
+def blend_one_point_color(color_1, color_2, alpha, position=0):
+    color_1 = np.asarray(color_1, dtype=np.float)
+    color_2 = np.asarray(color_2, dtype=np.float)
+    color_1[position] = color_1[position] * alpha + color_2[position] * (1 - alpha)
+    return color_1
+
+
 def simple_color_mult(color_1, color_2, verbose=False):
     """
     multiplies the colors to achieve a new color C
@@ -50,3 +57,12 @@ def simple_color_mult(color_1, color_2, verbose=False):
     if verbose:
         print("c1: {} c2: {} = {}".format(color_1, color_2, color_1 * color_2))
     return color_1 * color_2
+
+
+def hsv_color_operator(color_1, color_2, alpha=.5, position=0):
+    if color_1[0] == 0:
+        return color_2
+    if color_2[0] == 0:
+        return color_1
+    color_1[position] = color_1[position] * alpha + color_2[position] * (1 - alpha)
+    return color_1

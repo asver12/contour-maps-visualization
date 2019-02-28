@@ -37,45 +37,26 @@ def get_colorgrid(X, color_scheme, num_of_levels, *args, **kwargs):
     colormap_green = color_scheme(levels=levels, *args, **kwargs)
     return color_operations.map_colors(X, colormap_green, levels)
 
-
-def combine_two_image_sections(blending_operator, img, img2, color_space=None, *args, **kwargs):
-    img = color.rgb2hsv(img)
-    img2 = color.rgb2hsv(img2)
-    reduce = np.zeros([len(img), len(img[0]), 3])
-    for i in range(len(img)):
-        for j in range(len(img[0])):
-            wow = color_operations.blend_color(blending_operator, img[i][j][0], img2[i][j][0],
-                                               *args, **kwargs)
-            img[i][j][0] = wow
-            reduce[i][j] = img[i][j]
-    reduce = color.hsv2rgb(reduce)
-    return reduce
-
-
-def combine_two_image_max(img, z, img2, z_2):
-    z_new = np.zeros([len(img), len(img[0]), 1])
-    reduce = np.zeros([len(img), len(img[0]), 3])
-    for i in range(len(img)):
-        for j in range(len(img[0])):
-            if abs(z[i][j]) > abs(z_2[i][j]):
-                reduce[i][j] = img[i][j]
-                z_new[i][j] = z[i][j]
-            else:
-                reduce[i][j] = img2[i][j]
-                z_new[i][j] = z_2[i][j]
-    return reduce, z_new
-
-
-def combine_two_images(blending_operator, img, img2, color_space=None, *args, **kwargs):
+def combine_two_images(blending_operator, img, img2, color_space=None, verbose=False, *args, **kwargs):
     if color_space == "lab":
         img = color.rgb2lab(img)
         img2 = color.rgb2lab(img2)
         print("Lab-Color is used")
+    if color_space == "hsv":
+        img = color.rgb2hsv(img)
+        img2 = color.rgb2hsv(img2)
+        print("Hsv-Color is used")
     reduce = np.zeros([len(img), len(img[0]), 3])
     for i in range(len(img)):
         for j in range(len(img[0])):
+            if verbose:
+                print("{}:{} = {}".format(i, j, img[i][j]))
             reduce[i][j] = color_operations.blend_color(blending_operator, img[i][j], img2[i][j],
                                                         *args, **kwargs)
+            if verbose:
+                print("{}:{}: {} + {} = {}".format(i, j, img[i][j], img2[i][j], reduce[i][j][0]))
     if color_space == "lab":
         reduce = color.lab2rgb(reduce)
+    if color_space == "hsv":
+        reduce = color.hsv2rgb(reduce)
     return reduce
