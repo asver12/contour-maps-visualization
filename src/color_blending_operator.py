@@ -64,5 +64,19 @@ def hsv_color_operator(color_1, color_2, alpha=.5, position=0):
         return color_2
     if color_2[0] == 0:
         return color_1
-    color_1[position] = color_1[position] * alpha + color_2[position] * (1 - alpha)
+    color_1[position] = (color_1[position] * alpha + color_2[position] * (1 - alpha))
+    return color_1
+
+
+def hsv_color_operator_deg(color_1, color_2, alpha):
+    if color_1[2] == 0:
+        return color_2
+    if color_2[2] == 0:
+        return color_1
+    color_1[0] = color_1[0]*alpha + color_2[0]*(1-alpha)
+    return color_1
+
+def lab_color_operator(color_1,color_2, alpha):
+    color_1[0] = 1.
+    color_1[1] = color_2[1]
     return color_1

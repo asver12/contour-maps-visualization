@@ -37,6 +37,7 @@ def get_colorgrid(X, color_scheme, num_of_levels, *args, **kwargs):
     colormap_green = color_scheme(levels=levels, *args, **kwargs)
     return color_operations.map_colors(X, colormap_green, levels)
 
+
 def combine_two_images(blending_operator, img, img2, color_space=None, verbose=False, *args, **kwargs):
     if color_space == "lab":
         img = color.rgb2lab(img)
