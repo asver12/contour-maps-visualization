@@ -1,7 +1,5 @@
 Theorie
 
-[[TOC]]
-
 # 1 Color spaces
 
 A color space is a specific organization of colors which allows a reproducible representation of color
