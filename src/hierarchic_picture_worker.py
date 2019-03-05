@@ -1,10 +1,5 @@
-from matplotlib import pyplot as plt
-import matplotlib
 import numpy as np
 from numpy.core._multiarray_umath import ndarray
-from skimage import color
-
-from src import color_operations
 
 def combine_two_images(blending_operator, img, z_1, img2, z_2):
     z_new: ndarray = np.zeros([len(img), len(img[0]), 1])
