@@ -1,10 +1,11 @@
+import random
+
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib import cm
 
-from src import color_converter
 
-
-def create_monochromatic_colorscheme(startcolor, levels, lvl_white=1):
+def create_monochromatic_colorscheme(startcolor, levels, lvl_white=1, verbose=False):
     """
     Generates a monochromatic colorscheme from a startcolor. The values of the startcolor are in rgba
     with r,g,b in [0,1] and a = 1
@@ -19,6 +20,8 @@ def create_monochromatic_colorscheme(startcolor, levels, lvl_white=1):
                     norm_levels]
     for i in range(lvl_white + 1 if lvl_white < len(levels) else len(levels) + 1):
         color_scheme[i] = np.array([1., 1., 1., 1.])
+    if verbose:
+        print(color_scheme)
     return color_scheme
 
 
@@ -37,3 +40,7 @@ def matplotlib_colorschemes(colorscheme, levels, lvl_white=1, verbose=False):
     for i in range(lvl_white + 1):
         color_scheme[i] = np.array([1., 1., 1., 1.])
     return color_scheme
+
+
+def random_matplotlib_colorschemes():
+    return list(cm.cmap_d.keys())[random.randrange(len(cm.cmap_d.keys()))]
