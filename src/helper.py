@@ -3,6 +3,8 @@ import random
 from scipy.stats import multivariate_normal
 import numpy as np
 
+from src import picture_worker, color_schemes
+
 
 def get_gaussian(x_min, x_max, y_min, y_max, mu_x=0.0, variance_x=0.0, mu_y=0.0, variance_y=0.0, size=500000):
     """
@@ -63,3 +65,10 @@ def find_index(number, levels, verbose=False):
             start = pivo
         pivo = int((end - start) / 2 + start)
     return pivo + 1
+
+def generate_monochromatic_plot_from_gaussians(z_list, color_schemes_list):
+    z_color_list = []
+    for z, startcolor in zip(z_list, color_schemes_list):
+        z_color, _ = picture_worker.get_colorgrid(z, color_schemes.create_monochromatic_colorscheme, 10, False, startcolor=startcolor)
+        z_color_list.append(z_color)
+    return z_color_list
