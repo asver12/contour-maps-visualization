@@ -12,6 +12,12 @@ def rgb255a_to_rgb01a(rgba):
     return [item / 255 if i + 1 != len(rgba) else item for i, item in enumerate(rgba)]
 
 
+def hex_to_rgb(hex_rgb):
+    value = hex_rgb.lstrip('#')
+    lv = len(value)
+    return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+
+
 def rgb255_to_rgb01(rgba):
     return [item / 255 for item in rgba]
 
