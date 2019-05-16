@@ -41,7 +41,7 @@ def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, 
 
 def find_index(number, levels, verbose=False):
     """
-    finds the position of a number in a list. If the number is smaller then the smallest element in the list the
+    finds the position of a number in a sorted list. If the number is smaller then the smallest element in the list the
     function returns 0 if it is bigger than the biggest number in the list it returns the length of the list
 
     :param number: the number which position should be found
