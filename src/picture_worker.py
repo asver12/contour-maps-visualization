@@ -23,7 +23,7 @@ def get_picture(x_min, x_max, y_min, y_max, X, Y, Z, levels, *args, **kwargs):
     return img
 
 
-def get_colorgrid(X, color_scheme, num_of_levels, split=True, *args, **kwargs):
+def get_colorgrid(X, color_scheme, num_of_levels = 10, split=True, *args, **kwargs):
     """
     Takes a 2D-Grid and maps it to a color-scheme. Therefor it generates a colormap with the given number of levels
 
