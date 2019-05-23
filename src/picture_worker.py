@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 import matplotlib
 import numpy as np
 from numpy.core._multiarray_umath import ndarray
-from skimage import color
+from skimage import color, measure
 
 from src import color_operations
 
@@ -23,7 +23,7 @@ def get_picture(x_min, x_max, y_min, y_max, X, Y, Z, levels, *args, **kwargs):
     return img
 
 
-def get_colorgrid(X, color_scheme, num_of_levels = 10, split=True, *args, **kwargs):
+def get_colorgrid(X, color_scheme, num_of_levels=10, split=True, *args, **kwargs):
     """
     Takes a 2D-Grid and maps it to a color-scheme. Therefor it generates a colormap with the given number of levels
 
@@ -71,7 +71,17 @@ def _convert_color_space_to_rgb(img, color_space, verbose=False):
     return img
 
 
-def find_contour_lines(z_value, img, num_of_levels, epsilon=0.00011, verbose=False):
+def find_contour_lines(z_value, img, num_of_levels, verbose=False):
+    x_min, x_max = np.min(z_value), np.max(z_value)
+    levels = np.linspace(x_min, x_max, num_of_levels)
+    if verbose:
+        print(levels)
+    contours = []
+    for i in levels:
+        contours.append(measure.find_contours(z_value, i))
+    return contours
+
+def find_contour_lines_bruteforce(z_value, img, num_of_levels, epsilon=0.00011, verbose=False):
     x_min, x_max = np.min(z_value), np.max(z_value)
     levels = np.linspace(x_min, x_max, num_of_levels)
     if verbose:
@@ -85,6 +95,13 @@ def find_contour_lines(z_value, img, num_of_levels, epsilon=0.00011, verbose=Fal
 
 
 def _check_if_mixable(color_1, color_2):
+    """
+    checks if one of two colors is zero and returns 2 if color_1 is zero and 3 if color_2 is zero.
+    If both colors are none zero returns 1
+    :param color_1: rgb-color
+    :param color_2: rgb-color
+    :return: Int 1 if both none zero, 2 if first and 3 if second colors is zero
+    """
     if all(abs(1 - x) < 1e-14 for x in color_1):
         return 2
     if all(abs(1 - x) < 1e-14 for x in color_2):
@@ -144,8 +161,8 @@ def combine_two_images_hierarchic(blending_operator, image, z_1, image2, z_2, co
     Combines two images with shape [x,y,3/4]. If the 3 dimension is in shape 4 it is expected to be in rgab and will be
     transformed into srgb with shape 3.
 
-    :param verbose:
-    :param color_space:
+    :param verbose: show more information
+    :param color_space: None, "lab" or "hsv"
     :param blending_operator: operator which is used to mix the two images point by point
     :param image: image with shape [x,y,3/4]
     :param z_1: weights for the first image
@@ -192,6 +209,18 @@ def _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j
 
 def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space=None, verbose=False, *args,
                                        **kwargs):
+    """
+    Merges multiple pictures into one using a given blending-operator, the specific grade of blending is weighted by
+    the z_values of each image. The pixel of each image is merged by its weight. From lowest to highest
+    :param blending_operator: operator which is used to mix the images point by point
+    :param images: [image_1, image_2, ... , image_n]
+    :param z_values: [z_values_1, z_values_2, ... , z_values_n]
+    :param color_space: None, "lab" or "hsv"
+    :param verbose: show more information
+    :param args:
+    :param kwargs:
+    :return:
+    """
     images = [_convert_rgb_image(np.asarray(img), None) for img in images]
     if any(img.ndim != 3 for img in images):
         raise Exception("Images need a dimension of 3")
@@ -204,6 +233,7 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
     reduce = np.zeros([len(images[0]), len(images[0][0]), len(images[0][0][0])])
     for i in range(len(images[0])):
         for j in range(len(images[0][0])):
+            # sort z_values for the point and remember image it belongs to
             sorted_values = sorted([(k, x[i][j]) for k, x in enumerate(z_values)], key=lambda x: x[1])
             _hierarchic_blending(args, blending_operator, i, images[sorted_values[0][0]], images[sorted_values[1][0]],
                                  np_images[sorted_values[0][0]], np_images[sorted_values[1][0]],
@@ -216,18 +246,29 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
                     if verbose:
                         print("{},{} = {}".format(i, j, reduce[i][j]))
                     switch = {
-                        1: blending_operator(reduce[i][j], z_new[i][j], np_images[sorted_values[k][0]][i][j], z_values[sorted_values[k][0]][i][j], *args, **kwargs),
+                        1: blending_operator(reduce[i][j], z_new[i][j], np_images[sorted_values[k][0]][i][j],
+                                             z_values[sorted_values[k][0]][i][j], *args, **kwargs),
                         2: (np_images[sorted_values[k][0]][i][j], z_values[sorted_values[k][0]][i][j]),
                         3: (reduce[i][j], z_new[i][j]),
                     }
                     if verbose:
                         reduce_befor = reduce[i][j].copy()
                         print(_convert_color_space_to_rgb([[reduce[i][j]]], color_space)[0][0])
-                    reduce[i][j], z_new[i][j] = switch.get(_check_if_mixable(_convert_color_space_to_rgb([[reduce[i][j]]], color_space)[0][0], images[sorted_values[k][0]][i][j]))
+                    # Select between three cases:
+                    # 1: both pixel are not white, use blending_operator
+                    # 2: first pixel is white, use second
+                    # 3: second pixel is white, use first
+                    reduce[i][j], z_new[i][j] = switch.get(
+                        _check_if_mixable(_convert_color_space_to_rgb([[reduce[i][j]]], color_space)[0][0],
+                                          images[sorted_values[k][0]][i][j]))
+
                     if verbose:
                         print(
-                            "{},{}: {} + {} = {} \n  max({}|{}) = {}".format(i, j, reduce_befor, images[sorted_values[k][0]][i][j], reduce[i][j],
+                            "{},{}: {} + {} = {} \n  max({}|{}) = {}".format(i, j, reduce_befor,
+                                                                             images[sorted_values[k][0]][i][j],
+                                                                             reduce[i][j],
                                                                              z_new[i][j],
-                                                                             z_values[sorted_values[k][0]][i][j], z_new[i][j]))
+                                                                             z_values[sorted_values[k][0]][i][j],
+                                                                             z_new[i][j]))
     reduce = _convert_color_space_to_rgb(reduce, color_space)
     return reduce, z_new
