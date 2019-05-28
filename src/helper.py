@@ -45,13 +45,14 @@ def generate_gaussians(gaussians):
 
 def generate_weights(z_values):
     z_sum = z_values[0].copy()
-    z_min, z_max = np.min(z_values[0]), np.max(z_values[1])
-    for i in z_values:
-        i_min = np.min(i)
-        i_max = np.max(i)
-        z_min = np.min([z_min, i_min])
-        z_max = np.max([z_max, i_max])
-        z_sum += i
+    z_min, z_max = np.min(z_values[0]), np.max(z_values[0])
+    if len(z_values) > 0:
+        for i in z_values[1:]:
+            i_min = np.min(i)
+            i_max = np.max(i)
+            z_min = np.min([z_min, i_min])
+            z_max = np.max([z_max, i_max])
+            z_sum += i
     return z_min, z_max, z_sum
 
 

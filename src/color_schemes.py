@@ -114,6 +114,18 @@ red_color_scheme = [[1.0, 0.9607843137254902, 0.9411764705882353],
                     [0.6470588235294118, 0.058823529411764705, 0.08235294117647059],
                     [0.6, 0.0, 0.050980392156862744],
                     [0.403921568627451, 0.0, 0.050980392156862744]]
+grey_color_scheme = [[1.0, 1.0, 1.0],
+                     [0.9686274509803922, 0.9686274509803922, 0.9686274509803922],
+                     [0.9411764705882353, 0.9411764705882353, 0.9411764705882353],
+                     [0.8509803921568627, 0.8509803921568627, 0.8509803921568627],
+                     [0.8, 0.8, 0.8],
+                     [0.7411764705882353, 0.7411764705882353, 0.7411764705882353],
+                     [0.5882352941176471, 0.5882352941176471, 0.5882352941176471],
+                     [0.45098039215686275, 0.45098039215686275, 0.45098039215686275],
+                     [0.38823529411764707, 0.38823529411764707, 0.38823529411764707],
+                     [0.3215686274509804, 0.3215686274509804, 0.3215686274509804],
+                     [0.1450980392156863, 0.1450980392156863, 0.1450980392156863],
+                     [0.0, 0.0, 0.0]]
 
 
 # def _get_color_subarray(min_value, max_value, colorscheme):
@@ -127,7 +139,7 @@ def _interpolate(color_array, start, end, position):
 
 def create_color_brewer_colorscheme(colorscheme, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):
     colorschemes = {"blue": blue_color_scheme, "green": green_color_scheme, "orange": orange_color_scheme,
-                    "purple": purple_color_scheme, "red": red_color_scheme}
+                    "purple": purple_color_scheme, "red": red_color_scheme, "grey":grey_color_scheme}
     _colorscheme = colorschemes.get(colorscheme, blue_color_scheme)
     _check_constrains(min_value, max_value)
     norm_levels = np.linspace(min_value, max_value, len(levels) + 1)
