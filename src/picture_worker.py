@@ -1,11 +1,11 @@
+import math
 from matplotlib import pyplot as plt
 import matplotlib
 import numpy as np
 from numpy.core._multiarray_umath import ndarray
 from skimage import color, measure
 
-from src import color_operations
-
+from src import color_operations, hierarchic_blending_operator, helper
 
 def get_picture(x_min, x_max, y_min, y_max, X, Y, Z, levels, *args, **kwargs):
     matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
@@ -39,6 +39,11 @@ def get_colorgrid(X, color_scheme, num_of_levels=10, split=True, *args, **kwargs
     return color_operations.map_colors(X, colormap, levels, split)
 
 
+def get_colors(X, color_scheme, num_of_levels=10, *args, **kwargs):
+    x_min, x_max = np.min(X), np.max(X)
+    levels = np.linspace(x_min, x_max, num_of_levels)  # [1:6] ?
+    return color_scheme(levels=levels, *args, **kwargs)
+
 def _convert_rgb_image(img, color_space, verbose=False):
     if img.shape[-1] == 4:
         img = color.rgba2rgb(img)
@@ -71,15 +76,73 @@ def _convert_color_space_to_rgb(img, color_space, verbose=False):
     return img
 
 
-def find_contour_lines(z_value, img, num_of_levels, verbose=False):
+def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+                   borders=None, verbose=False):
+    if borders is None:
+        borders = [0, 1]
+    z_list = helper.generate_gaussians(gaussians)
+    z_min, z_max, z_sum = helper.generate_weights(z_list)
+    img_list = []
+    lower_border = borders[0]
+    upper_border = borders[1]
+    for z, colorscheme in zip(z_list, colorschemes):
+        z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
+        z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
+        img, _ = get_colorgrid(z, **colorscheme, min_value=z_min_weight, max_value=z_max_weight, split=False,
+                               verbose=verbose)
+        img_list.append(img)
+    image, alpha = combine_multiple_images_hierarchic(blending_operator, img_list, z_list)
+    return z_list, image, z_sum
+
+
+def plot_images(images, gaussians, z_sums, contour_lines=True, levels=8, columns=5):
+    """
+    plots images for given gaussians
+    :param images: [image_1, ... , image_n]
+    :param gaussians: [gaussian_1, ... , gaussian_n]
+    :param z_sums: [z_sum_1, ... z_sum_n]
+    :param contour_lines: if true plot while be returned with contour-lines
+    :param levels: number of contour-lines returned
+    :param columns: number of pictures next to each other
+    :return:
+    """
+    print("{}".format(["mu_x", "variance_x", "mu_y", "variance_y"]))
+    if len(images) == 1:
+        if contour_lines:
+            contours = find_contour_lines(z_sums[0], levels)
+            for i in contours:
+                for contour in i:
+                    plt.plot(contour[:, 1], contour[:, 0], linewidth=1, color="black")
+        plt.imshow(images[0])
+        plt.axis("off")
+    else:
+        for i in range(math.ceil(len(images) / columns)):
+            subplot = images[i * columns:(i + 1) * columns]
+            sub_sums = z_sums[i * columns:(i + 1) * columns]
+            fig, axes = plt.subplots(1, len(subplot))
+            for j in range(len(subplot)):
+                if contour_lines:
+                    contours = find_contour_lines(sub_sums[j], levels)
+                    for i in contours:
+                        for contour in i:
+                            axes[j].plot(contour[:, 1], contour[:, 0], linewidth=1, color="black")
+                axes[j].imshow(subplot[j])
+                axes[j].set_title('\n'.join("{}".format(gau[4:-1]) for gau in gaussians[j]))
+                axes[j].axis("off")
+            plt.subplots_adjust(bottom=0.0, left=0, right=2, top=2)
+
+
+def find_contour_lines(z_value, num_of_levels, verbose=False):
     x_min, x_max = np.min(z_value), np.max(z_value)
-    levels = np.linspace(x_min, x_max, num_of_levels)
+    levels = np.linspace(x_min, x_max, num_of_levels + 2)
     if verbose:
         print(levels)
     contours = []
     for i in levels:
         contours.append(measure.find_contours(z_value, i))
     return contours
+
+
 
 def find_contour_lines_bruteforce(z_value, img, num_of_levels, epsilon=0.00011, verbose=False):
     x_min, x_max = np.min(z_value), np.max(z_value)

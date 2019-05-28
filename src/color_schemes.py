@@ -48,6 +48,7 @@ def create_monochromatic_colorscheme(startcolor, levels, min_value=0, max_value=
 #                        '#756bb1', '#6a51a3', '#54278f', '#4a1486', '#3f007d']
 # red_color_scheme = ['#fff5f0', '#fee5d9', '#fee0d2', '#fcbba1', '#fcae91', '#fc9272', '#fb6a4a', '#ef3b2c',
 #                     '#de2d26', '#cb181d', '#a50f15', '#99000d', '#67000d']
+# grey_color_scheme = []
 blue_color_scheme = [[0.9686274509803922, 0.984313725490196, 1.0],
                      [0.9372549019607843, 0.9529411764705882, 1.0],
                      [0.8705882352941177, 0.9215686274509803, 0.9686274509803922],
@@ -127,9 +128,8 @@ def _interpolate(color_array, start, end, position):
 def create_color_brewer_colorscheme(colorscheme, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):
     colorschemes = {"blue": blue_color_scheme, "green": green_color_scheme, "orange": orange_color_scheme,
                     "purple": purple_color_scheme, "red": red_color_scheme}
-    # _colorscheme = _get_color_subarray(min_value, max_value, colorschemes.get(colorscheme, blue_color_scheme))
     _colorscheme = colorschemes.get(colorscheme, blue_color_scheme)
-    _check_constrains(min_value,max_value)
+    _check_constrains(min_value, max_value)
     norm_levels = np.linspace(min_value, max_value, len(levels) + 1)
     if verbose:
         print("Min: {} | Max: {}".format(min_value, max_value))
@@ -147,7 +147,7 @@ def create_color_brewer_colorscheme(colorscheme, levels, min_value=0, max_value=
     for i in range(lvl_white + 1 if lvl_white < len(levels) else len(levels) + 1):
         colors[i] = np.array([1., 1., 1., 1.])
     if verbose:
-        print(colors)
+        print("{}[{}]".format(colors, len(colors)))
     return colors
 
 
@@ -169,7 +169,7 @@ def create_hsl_colorscheme(startcolor, levels, min_value=0, max_value=1, lvl_whi
     # 230 48 47
     # 231 44 55
     # 230 44 63
-    _check_constrains(min_value,max_value)
+    _check_constrains(min_value, max_value)
     rgb = __convert_startcolor(startcolor)
     norm_levels = np.linspace(min_value, max_value, len(levels) + 1)
     if verbose:

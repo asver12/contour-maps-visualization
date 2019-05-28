@@ -39,6 +39,22 @@ def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, 
     return get_gaussian(x_min, x_max, y_min, y_max, *(mu_x_1, mu_variance_x_1, mu_y_1, mu_variance_y_1), size)
 
 
+def generate_gaussians(gaussians):
+    return [get_gaussian(*gaussian)[2] for gaussian in gaussians]
+
+
+def generate_weights(z_values):
+    z_sum = z_values[0].copy()
+    z_min, z_max = np.min(z_values[0]), np.max(z_values[1])
+    for i in z_values:
+        i_min = np.min(i)
+        i_max = np.max(i)
+        z_min = np.min([z_min, i_min])
+        z_max = np.max([z_max, i_max])
+        z_sum += i
+    return z_min, z_max, z_sum
+
+
 def find_index(number, levels, verbose=False):
     """
     finds the position of a number in a sorted list. If the number is smaller then the smallest element in the list the
