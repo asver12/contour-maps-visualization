@@ -48,7 +48,8 @@ def create_monochromatic_colorscheme(startcolor, levels, min_value=0, max_value=
 #                        '#756bb1', '#6a51a3', '#54278f', '#4a1486', '#3f007d']
 # red_color_scheme = ['#fff5f0', '#fee5d9', '#fee0d2', '#fcbba1', '#fcae91', '#fc9272', '#fb6a4a', '#ef3b2c',
 #                     '#de2d26', '#cb181d', '#a50f15', '#99000d', '#67000d']
-# grey_color_scheme = []
+# grey_color_scheme = ['#ffffff', '#f7f7f7', '#f0f0f0', '#d9d9d9', '#cccccc', '#bdbdbd', '#969696', '#737373', '#636363',
+#                     '#525252', '#252525', '#000000']
 blue_color_scheme = [[0.9686274509803922, 0.984313725490196, 1.0],
                      [0.9372549019607843, 0.9529411764705882, 1.0],
                      [0.8705882352941177, 0.9215686274509803, 0.9686274509803922],
@@ -128,10 +129,6 @@ grey_color_scheme = [[1.0, 1.0, 1.0],
                      [0.0, 0.0, 0.0]]
 
 
-# def _get_color_subarray(min_value, max_value, colorscheme):
-#     return colorscheme[math.floor(min_value * len(colorscheme)) - 1: math.ceil(max_value * len(colorscheme))]
-
-
 def _interpolate(color_array, start, end, position):
     percentage = (position - start) / (end - start)
     return (1. - percentage) * np.array(color_array[start]) + percentage * np.array(color_array[end])
@@ -139,7 +136,7 @@ def _interpolate(color_array, start, end, position):
 
 def create_color_brewer_colorscheme(colorscheme, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):
     colorschemes = {"blue": blue_color_scheme, "green": green_color_scheme, "orange": orange_color_scheme,
-                    "purple": purple_color_scheme, "red": red_color_scheme, "grey":grey_color_scheme}
+                    "purple": purple_color_scheme, "red": red_color_scheme, "grey": grey_color_scheme}
     _colorscheme = colorschemes.get(colorscheme, blue_color_scheme)
     _check_constrains(min_value, max_value)
     norm_levels = np.linspace(min_value, max_value, len(levels) + 1)
@@ -161,6 +158,16 @@ def create_color_brewer_colorscheme(colorscheme, levels, min_value=0, max_value=
     if verbose:
         print("{}[{}]".format(colors, len(colors)))
     return colors
+
+
+def get_colorbrewer_schemes():
+    colorscheme_names = ["blue", "orange", "green", "red", "purple"]
+    return [{"color_scheme": create_color_brewer_colorscheme, "colorscheme": colorscheme_name} for colorscheme_name in
+            colorscheme_names]
+
+
+def getBackgroundColorBrewerScheme():
+    return {"color_scheme": create_color_brewer_colorscheme, "colorscheme": "grey"}
 
 
 def create_hsl_colorscheme(startcolor, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):

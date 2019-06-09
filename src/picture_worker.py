@@ -1,11 +1,12 @@
 import math
-from matplotlib import pyplot as plt
 import matplotlib
 import numpy as np
+from matplotlib import pyplot as plt
 from numpy.core._multiarray_umath import ndarray
 from skimage import color, measure
 
-from src import color_operations, hierarchic_blending_operator, helper
+from src import color_operations, hierarchic_blending_operator, helper, c_picture_worker
+
 
 def get_picture(x_min, x_max, y_min, y_max, X, Y, Z, levels, *args, **kwargs):
     matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
@@ -44,6 +45,7 @@ def get_colors(X, color_scheme, num_of_levels=10, *args, **kwargs):
     levels = np.linspace(x_min, x_max, num_of_levels)  # [1:6] ?
     return color_scheme(levels=levels, *args, **kwargs)
 
+
 def _convert_rgb_image(img, color_space, verbose=False):
     if img.shape[-1] == 4:
         img = color.rgba2rgb(img)
@@ -76,7 +78,24 @@ def _convert_color_space_to_rgb(img, color_space, verbose=False):
     return img
 
 
-def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+def get_image_list(gaussians, colorschemes, borders=None, verbose=False):
+    if borders is None:
+        borders = [0, 1]
+    z_list = helper.generate_gaussians(gaussians)
+    z_min, z_max, z_sum = helper.generate_weights(z_list)
+    img_list = []
+    lower_border = borders[0]
+    upper_border = borders[1]
+    for z, colorscheme in zip(z_list, colorschemes):
+        z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
+        z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
+        img, _ = get_colorgrid(z, **colorscheme, min_value=z_min_weight, max_value=z_max_weight, split=True,
+                               verbose=verbose)
+        img_list.append(img)
+    return img_list, z_list, z_sum
+
+
+def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blending_operator.porter_duff_source_over, useCImplementation = False,
                    borders=None, verbose=False):
     if borders is None:
         borders = [0, 1]
@@ -88,16 +107,20 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
     for z, colorscheme in zip(z_list, colorschemes):
         z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
         z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
-        img, _ = get_colorgrid(z, **colorscheme, min_value=z_min_weight, max_value=z_max_weight, split=False,
+        img, _ = get_colorgrid(z, **colorscheme, min_value=z_min_weight, max_value=z_max_weight, split=True,
                                verbose=verbose)
         img_list.append(img)
-    image, alpha = combine_multiple_images_hierarchic(blending_operator, img_list, z_list)
+    image, alpha = combine_multiple_images_hierarchic(blending_operator, img_list, z_list, useCImplementation = useCImplementation, verbose=verbose)
     return z_list, image, z_sum
 
 
-def plot_images(images, gaussians, z_sums, contour_lines=True, levels=8, columns=5):
+def plot_images(images, gaussians, z_sums, contour_lines=True, levels=8, title="", columns=5,
+                bottom=0.0,
+                left=0., right=2.,
+                top=2.):
     """
     plots images for given gaussians
+
     :param images: [image_1, ... , image_n]
     :param gaussians: [gaussian_1, ... , gaussian_n]
     :param z_sums: [z_sum_1, ... z_sum_n]
@@ -108,28 +131,50 @@ def plot_images(images, gaussians, z_sums, contour_lines=True, levels=8, columns
     """
     print("{}".format(["mu_x", "variance_x", "mu_y", "variance_y"]))
     if len(images) == 1:
-        if contour_lines:
-            contours = find_contour_lines(z_sums[0], levels)
-            for i in contours:
-                for contour in i:
-                    plt.plot(contour[:, 1], contour[:, 0], linewidth=1, color="black")
-        plt.imshow(images[0])
-        plt.axis("off")
+        plot_image(images[0], gaussians[0], z_sums[0], contour_lines, title, levels, bottom, left,
+                   right, top)
     else:
         for i in range(math.ceil(len(images) / columns)):
             subplot = images[i * columns:(i + 1) * columns]
             sub_sums = z_sums[i * columns:(i + 1) * columns]
-            fig, axes = plt.subplots(1, len(subplot))
-            for j in range(len(subplot)):
+            fig, axes = plt.subplots(1, len(subplot), sharex='col', sharey='row')
+            if len(subplot) == 1:
+                axes.imshow(subplot[0])
                 if contour_lines:
-                    contours = find_contour_lines(sub_sums[j], levels)
-                    for i in contours:
-                        for contour in i:
-                            axes[j].plot(contour[:, 1], contour[:, 0], linewidth=1, color="black")
-                axes[j].imshow(subplot[j])
-                axes[j].set_title('\n'.join("{}".format(gau[4:-1]) for gau in gaussians[j]))
-                axes[j].axis("off")
-            plt.subplots_adjust(bottom=0.0, left=0, right=2, top=2)
+                    contours = find_contour_lines(sub_sums[0], levels)
+                    for k in contours:
+                        for contour in k:
+                            axes.plot(contour[:, 1], contour[:, 0], linewidth=1, color="black")
+                axes.axis("off")
+            else:
+                for j in range(len(subplot)):
+                    axes[j].imshow(subplot[j])
+                    if contour_lines:
+                        contours = find_contour_lines(sub_sums[j], levels)
+                        for k in contours:
+                            for contour in k:
+                                axes[j].plot(contour[:, 1], contour[:, 0], linewidth=1, color="black")
+                    if title == "" and gaussians:
+                        axes[j].set_title(
+                            '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[j + i * columns]))
+                    elif len(title) > j + i * columns:
+                        axes[j].set_title(title[j + i * columns])
+                    axes[j].axis("off")
+            fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
+
+
+def plot_image(image, gaussians, z_sum, contour_lines=True, title="", levels=8, bottom=0.0,
+               left=0., right=2.,
+               top=2.):
+    if contour_lines:
+        contours = find_contour_lines(z_sum, levels)
+        for i in contours:
+            for contour in i:
+                plt.plot(contour[:, 1], contour[:, 0], linewidth=1, color="black")
+    plt.imshow(image)
+    plt.axis("off")
+    plt.title('\n'.join("{}".format(gau[4:-1]) for gau in gaussians) if title == "" and gaussians else title)
+    plt.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
 
 
 def find_contour_lines(z_value, num_of_levels, verbose=False):
@@ -141,7 +186,6 @@ def find_contour_lines(z_value, num_of_levels, verbose=False):
     for i in levels:
         contours.append(measure.find_contours(z_value, i))
     return contours
-
 
 
 def find_contour_lines_bruteforce(z_value, img, num_of_levels, epsilon=0.00011, verbose=False):
@@ -270,7 +314,7 @@ def _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j
                                                                z_2[i][j], z_new[i][j]))
 
 
-def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space=None, verbose=False, *args,
+def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space=None, useCImplementation=False, verbose=False, *args,
                                        **kwargs):
     """
     Merges multiple pictures into one using a given blending-operator, the specific grade of blending is weighted by
@@ -284,6 +328,18 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
     :param kwargs:
     :return:
     """
+
+    if verbose:
+        import time
+        start = time.time()
+    if useCImplementation:
+        if verbose:
+            print("Using C-Implementation")
+        result = c_picture_worker.callHierarchicMerge(images, z_values)
+        if verbose:
+            end = time.time()
+            print("{}s elapsed".format(end-start))
+        return result
     images = [_convert_rgb_image(np.asarray(img), None) for img in images]
     if any(img.ndim != 3 for img in images):
         raise Exception("Images need a dimension of 3")
@@ -334,4 +390,7 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
                                                                              z_values[sorted_values[k][0]][i][j],
                                                                              z_new[i][j]))
     reduce = _convert_color_space_to_rgb(reduce, color_space)
+    if verbose:
+        end = time.time()
+        print("{}s elapsed".format(end - start))
     return reduce, z_new

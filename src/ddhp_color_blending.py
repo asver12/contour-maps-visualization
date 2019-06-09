@@ -1,6 +1,5 @@
 from ctypes import cdll, c_int, c_float
 import os
-from src import color_converter
 try:
     local_dir = os.path.dirname(__file__)
     lib = cdll.LoadLibrary(local_dir +"/../libs/libsvmBlend.so")

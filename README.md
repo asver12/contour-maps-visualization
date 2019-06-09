@@ -8,3 +8,12 @@ In order to achieve this goal we are going to try a bunch of different approache
 * to change the mixing opertor
 * to change the color space
 * to indivdualize the mixing operator for each pixel
+
+## Getting Started
+
+### Prerequisites
+Make sure you have python 3.5 or higher and pip3 installed.
+Than install dependencies with:
+```sh
+pip3 install -r requirements.txt
+```
