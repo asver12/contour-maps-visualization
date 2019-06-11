@@ -5,6 +5,8 @@ from matplotlib import pyplot as plt
 from numpy.core._multiarray_umath import ndarray
 from skimage import color, measure
 
+from matplotlib.lines import Line2D
+
 from src import color_operations, hierarchic_blending_operator, helper, c_picture_worker
 
 
@@ -24,19 +26,19 @@ def get_picture(x_min, x_max, y_min, y_max, X, Y, Z, levels, *args, **kwargs):
     return img
 
 
-def get_colorgrid(X, color_scheme, num_of_levels=10, split=True, *args, **kwargs):
+def get_colorgrid(X, colorscheme, num_of_levels=10, split=True, *args, **kwargs):
     """
     Takes a 2D-Grid and maps it to a color-scheme. Therefor it generates a colormap with the given number of levels
 
     :param X: 2D-Grid with single values
-    :param color_scheme: color-scheme from color_schemes
+    :param colorscheme: color-scheme from color_schemes
     :param num_of_levels:
     :param args:
     :return: 2D-Grid with color values from the color-scheme
     """
     x_min, x_max = np.min(X), np.max(X)
     levels = np.linspace(x_min, x_max, num_of_levels)  # [1:6] ?
-    colormap = color_scheme(levels=levels, *args, **kwargs)
+    colormap = colorscheme(levels=levels, *args, **kwargs)
     return color_operations.map_colors(X, colormap, levels, split)
 
 
@@ -99,6 +101,11 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
                    borders=None, verbose=False):
     if borders is None:
         borders = [0, 1]
+    if len(gaussians) == 1:
+        z_list = helper.generate_gaussians(gaussians)
+        img, _ = get_colorgrid(z_list[0], **colorschemes[0], split=True,
+                               verbose=verbose)
+        return z_list, img, z_list[0]
     z_list = helper.generate_gaussians(gaussians)
     z_min, z_max, z_sum = helper.generate_weights(z_list)
     img_list = []
@@ -114,13 +121,14 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
     return z_list, image, z_sum
 
 
-def plot_images(images, gaussians, z_sums, contour_lines=True, levels=8, title="", columns=5,
+def plot_images(images, gaussians, z_sums, colors=None, contour_lines=True, levels=8, title="", columns=5,
                 bottom=0.0,
                 left=0., right=2.,
                 top=2.):
     """
     plots images for given gaussians
 
+    :param colors: color of each gaussian. Gonna be plotted as legend
     :param images: [image_1, ... , image_n]
     :param gaussians: [gaussian_1, ... , gaussian_n]
     :param z_sums: [z_sum_1, ... z_sum_n]
@@ -160,6 +168,9 @@ def plot_images(images, gaussians, z_sums, contour_lines=True, levels=8, title="
                     elif len(title) > j + i * columns:
                         axes[j].set_title(title[j + i * columns])
                     axes[j].axis("off")
+                    if colors:
+                        custom_lines = [Line2D([0],[0], color = colors[i],lw=4) for i in range(len(gaussians[j + i * columns]))]
+                        axes[j].legend(custom_lines, [i for i in range(len(gaussians[j + i * columns]))], loc='upper left', frameon=False)
             fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
 
 

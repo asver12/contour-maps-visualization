@@ -129,15 +129,19 @@ grey_color_scheme = [[1.0, 1.0, 1.0],
                      [0.0, 0.0, 0.0]]
 
 
+def get_main_color(colorscheme):
+    return colorscheme["colorscheme"](colorscheme["colorscheme_name"], list(range(12)))
+
+
 def _interpolate(color_array, start, end, position):
     percentage = (position - start) / (end - start)
     return (1. - percentage) * np.array(color_array[start]) + percentage * np.array(color_array[end])
 
 
-def create_color_brewer_colorscheme(colorscheme, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):
+def create_color_brewer_colorscheme(colorscheme_name, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):
     colorschemes = {"blue": blue_color_scheme, "green": green_color_scheme, "orange": orange_color_scheme,
                     "purple": purple_color_scheme, "red": red_color_scheme, "grey": grey_color_scheme}
-    _colorscheme = colorschemes.get(colorscheme, blue_color_scheme)
+    _colorscheme = colorschemes.get(colorscheme_name, blue_color_scheme)
     _check_constrains(min_value, max_value)
     norm_levels = np.linspace(min_value, max_value, len(levels) + 1)
     if verbose:
@@ -162,7 +166,7 @@ def create_color_brewer_colorscheme(colorscheme, levels, min_value=0, max_value=
 
 def get_colorbrewer_schemes():
     colorscheme_names = ["blue", "orange", "green", "red", "purple"]
-    return [{"color_scheme": create_color_brewer_colorscheme, "colorscheme": colorscheme_name} for colorscheme_name in
+    return [{"colorscheme": create_color_brewer_colorscheme, "colorscheme_name": colorscheme_name} for colorscheme_name in
             colorscheme_names]
 
 
