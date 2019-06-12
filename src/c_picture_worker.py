@@ -32,17 +32,25 @@ def create_cdll_type(array):
     return np.ctypeslib.as_ctypes(array.flatten())
 
 
-def callSimpleMerge(matrix, weight, verbose=False):
-    m, n = len(matrix[0]), len(matrix[0][0])
-    matrix = [np.asarray(i, dtype=dtype) for i in matrix]
+def callSimpleMerge(matrizes, weight, verbose=False):
+    """
+    combines two matrizes by simple weight given
+
+    :param matrizes: [image_1, image_2]
+    :param weight: [weight_1, weight_2]
+    :param verbose: outputs additional information
+    :return: 2D-image
+    """
+    m, n = len(matrizes[0]), len(matrizes[0][0])
+    matrizes = [np.asarray(i, dtype=dtype) for i in matrizes]
     weight = [np.asarray(i, dtype=dtype) for i in weight]
     if verbose:
-        for i in range(len(matrix[0])):
+        for i in range(len(matrizes[0])):
             print("{}: ".format(i), end="")
-            for j in range(len(matrix[0][0])):
+            for j in range(len(matrizes[0][0])):
                 print("{}: ".format(j), end="")
-                for k in range(len(matrix[0][0][0])):
-                    print("{} ".format(matrix[0][i][j][k]), end="")
+                for k in range(len(matrizes[0][0][0])):
+                    print("{} ".format(matrizes[0][i][j][k]), end="")
             print("")
         print("")
 
@@ -54,12 +62,12 @@ def callSimpleMerge(matrix, weight, verbose=False):
             print("")
         print("")
 
-    new_matrix = np.zeros(matrix[0].shape, dtype=np.float)
+    new_matrix = np.zeros(matrizes[0].shape, dtype=np.float)
     new_weight = np.zeros(weight[0].shape, dtype=np.float)
     c_new_matrix = create_cdll_type(new_matrix)
     c_new_weight = create_cdll_type(new_weight)
-    lib.mmMultSimple(m, n, create_cdll_type(matrix[0]),
-                     create_cdll_type(weight[0]), create_cdll_type(matrix[1]),
+    lib.mmMultSimple(m, n, create_cdll_type(matrizes[0]),
+                     create_cdll_type(weight[0]), create_cdll_type(matrizes[1]),
                      create_cdll_type(weight[1]), c_new_matrix, c_new_weight)
     return np.ctypeslib.as_array(c_new_matrix).reshape((m, n, 3)), np.ctypeslib.as_array(c_new_weight).reshape(m, n, 1)
 
@@ -73,11 +81,12 @@ lib.mmMultHierarchic.restype = None
 
 def callHierarchicMerge(matrizes, weights):
     """
+    Combines multiple matrizes hierarchic and returns the combined image. Uses hierarchic porter-duff-source-over
     Only works with rgb-Images atm
 
-    :param matrizes: list of images to use
-    :param weights: corresponding weights to images
-    :return: hierarchicly build new image
+    :param matrizes: [image_1, ... , image_n] list of images to use
+    :param weights: [weight_1, ... , weight_n] corresponding weights to images
+    :return: hierarchicly build new 2D-image
     """
     num_of_matrizes, m, n = len(matrizes), len(matrizes[0]), len(matrizes[0][0])
 

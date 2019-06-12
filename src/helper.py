@@ -1,7 +1,6 @@
 import random
-
-from scipy.stats import multivariate_normal
 import numpy as np
+from scipy.stats import multivariate_normal
 
 from src import picture_worker, color_schemes
 
@@ -32,6 +31,18 @@ def get_gaussian(x_min, x_max, y_min, y_max, mu_x=0.0, variance_x=0.0, mu_y=0.0,
 
 
 def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, size, scale_factor=1):
+    """
+    generates a random gaussian inbetween the given min and max values
+    :param x_min: minimal x-value for the x-expectation
+    :param x_max: maximal x-value for the x-expectation
+    :param y_min: minimal y-value for the y-expectation
+    :param y_max: maximal y-value for the y-expectation
+    :param variance_min: minimal variance of the gaussian
+    :param variance_max: maximal variance of the gaussian
+    :param size: shape of the 2D-gaussian (size*size)
+    :param scale_factor: scalar for x_min, x_max, y_min, y_max
+    :return: 2D-gaussian (size, size)
+    """
     mu_x_1 = random.randint(int(x_min * scale_factor), int(x_max * scale_factor))
     mu_y_1 = random.randint(int(y_min * scale_factor), int(y_max * scale_factor))
     mu_variance_x_1 = random.randint(variance_min, variance_max)
@@ -44,6 +55,11 @@ def generate_gaussians(gaussians):
 
 
 def generate_weights(z_values):
+    """
+    calculates minimum, maximum and sum of a given list of weights.
+    :param z_values: [2D-weights_1, ... ,2D-weights_n]
+    :return: minimum value of all weights, max of all weights, 2D-matrix with sum of each pixel of 2D-weights
+    """
     z_sum = z_values[0].copy()
     z_min, z_max = np.min(z_values[0]), np.max(z_values[0])
     if len(z_values) > 0:
@@ -85,6 +101,13 @@ def find_index(number, levels, verbose=False):
 
 
 def generate_monochromatic_plot_from_gaussians(z_list, color_schemes_list):
+    """
+    generates a color-images from a 2D-gaussian
+
+    :param z_list: [2D-gaussian_1, ... ,2D-gaussian_n]
+    :param color_schemes_list: [startcolor_1, startcolor_n]
+    :return: [2D-image_1, ... , 2D-image_n]
+    """
     z_color_list = []
     for z, startcolor in zip(z_list, color_schemes_list):
         z_color, _ = picture_worker.get_colorgrid(z, color_schemes.create_monochromatic_colorscheme, 10, False,
@@ -94,6 +117,12 @@ def generate_monochromatic_plot_from_gaussians(z_list, color_schemes_list):
 
 
 def generate_brewer_plot_from_gaussians(z_list, color_schemes_list):
+    """
+
+    :param z_list: [2D-gaussian_1, ... ,2D-gaussian_n]
+    :param color_schemes_list: [colorname_1, colorname_n]
+    :return: [2D-image_1, ... , 2D-image_n]
+    """
     z_color_list = []
     for z, colorscheme in zip(z_list, color_schemes_list):
         z_color, _ = picture_worker.get_colorgrid(z, color_schemes.create_color_brewer_colorscheme, 10, False,

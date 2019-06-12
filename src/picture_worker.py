@@ -43,12 +43,30 @@ def get_colorgrid(X, colorscheme, num_of_levels=10, split=True, *args, **kwargs)
 
 
 def get_colors(X, color_scheme, num_of_levels=10, *args, **kwargs):
+    """
+    Creates for a given list and a colorscheme a list of num_of_levels colors
+
+    :param X: list of any dimension
+    :param color_scheme: color scheme with a variable levels
+    :param num_of_levels: number of colors to output
+    :param args: unnamed arguments for color_scheme
+    :param kwargs: named arguments for color_scheme
+    :return: list of size num_of_levels with colors
+    """
     x_min, x_max = np.min(X), np.max(X)
     levels = np.linspace(x_min, x_max, num_of_levels)  # [1:6] ?
     return color_scheme(levels=levels, *args, **kwargs)
 
 
 def _convert_rgb_image(img, color_space, verbose=False):
+    """
+    converts rgb-image into a given color-space. If the rgb-image is in rgba its converted to rgb.
+
+    :param img: 2D-image with rgba or rgb values
+    :param color_space: "lab" or "hsv"
+    :param verbose: outputs additional information
+    :return: 2D-image in given color-space if no color-space is given in rgb
+    """
     if img.shape[-1] == 4:
         img = color.rgba2rgb(img)
     if color_space == "lab":
@@ -66,6 +84,14 @@ def _convert_rgb_image(img, color_space, verbose=False):
 
 
 def _convert_color_space_to_rgb(img, color_space, verbose=False):
+    """
+    converts image of given color-space into a rgb-image.
+
+    :param img: 2D-image in given color-space
+    :param color_space: "lab" or "hsv"
+    :param verbose: outputs additional information
+    :return: 2D-image in rgb if no color-space is given in rgb
+    """
     if color_space == "lab":
         img = color.lab2rgb(img)
         if verbose:
@@ -81,6 +107,15 @@ def _convert_color_space_to_rgb(img, color_space, verbose=False):
 
 
 def get_image_list(gaussians, colorschemes, borders=None, verbose=False):
+    """
+
+    :param gaussians: [gaussian_1, ... , gaussian_n]
+    :param colorschemes: [{colorscheme: color_scheme_function_1, colorscheme_name: colorscheme_name_1},
+                            ... ]{colorscheme: color_scheme_function_n, colorscheme_name: colorscheme_name_n}]
+    :param borders: range in which the pixel of the pictures are normalizes
+    :param verbose: outputs additional information
+    :return: Imagelist [2D-image_1, ... ,2D-image_n], Weights [2D-weight_1, ... ,2D-weight_n], Sum of all weights 2D-weight
+    """
     if borders is None:
         borders = [0, 1]
     z_list = helper.generate_gaussians(gaussians)
@@ -97,8 +132,21 @@ def get_image_list(gaussians, colorschemes, borders=None, verbose=False):
     return img_list, z_list, z_sum
 
 
-def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blending_operator.porter_duff_source_over, useCImplementation = False,
+def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+                   useCImplementation=False,
                    borders=None, verbose=False):
+    """
+    Generates an image from a list of gaussians and a colorscheme for each
+
+    :param gaussians: [gaussian_1, ... , gaussian_n]
+    :param colorschemes: [{colorscheme: color_scheme_function_1, colorscheme_name: colorscheme_name_1},
+                            ... ]{colorscheme: color_scheme_function_n, colorscheme_name: colorscheme_name_n}]
+    :param blending_operator: default is hierarchic-porter-duff-source-over
+    :param useCImplementation: if true the c-implementation is used which is approc. 3-4 times faster but only works with hierarchic-porter-duff-source-over
+    :param borders: range in which the pixel of the pictures are normalizes
+    :param verbose: outputs additional information
+    :return: Weights [2D-weight_1, ... ,2D-weight_n], 2D-image, Sum of all weights 2D-weight
+    """
     if borders is None:
         borders = [0, 1]
     if len(gaussians) == 1:
@@ -117,7 +165,8 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
         img, _ = get_colorgrid(z, **colorscheme, min_value=z_min_weight, max_value=z_max_weight, split=True,
                                verbose=verbose)
         img_list.append(img)
-    image, alpha = combine_multiple_images_hierarchic(blending_operator, img_list, z_list, useCImplementation = useCImplementation, verbose=verbose)
+    image, alpha = combine_multiple_images_hierarchic(blending_operator, img_list, z_list,
+                                                      useCImplementation=useCImplementation, verbose=verbose)
     return z_list, image, z_sum
 
 
@@ -130,7 +179,7 @@ def plot_images(images, gaussians, z_sums, colors=None, contour_lines=True, leve
 
     :param colors: color of each gaussian. Gonna be plotted as legend
     :param images: [image_1, ... , image_n]
-    :param gaussians: [gaussian_1, ... , gaussian_n]
+    :param gaussians: [[gaussian_1_1, ... gaussian_1_m], ... , [gaussian_n_1, ... gaussian_n_m]] gaussians from which the image is calculated
     :param z_sums: [z_sum_1, ... z_sum_n]
     :param contour_lines: if true plot while be returned with contour-lines
     :param levels: number of contour-lines returned
@@ -169,14 +218,26 @@ def plot_images(images, gaussians, z_sums, colors=None, contour_lines=True, leve
                         axes[j].set_title(title[j + i * columns])
                     axes[j].axis("off")
                     if colors:
-                        custom_lines = [Line2D([0],[0], color = colors[i],lw=4) for i in range(len(gaussians[j + i * columns]))]
-                        axes[j].legend(custom_lines, [i for i in range(len(gaussians[j + i * columns]))], loc='upper left', frameon=False)
+                        custom_lines = [Line2D([0], [0], color=colors[i], lw=4) for i in
+                                        range(len(gaussians[j + i * columns]))]
+                        axes[j].legend(custom_lines, [i for i in range(len(gaussians[j + i * columns]))],
+                                       loc='upper left', frameon=False)
             fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
 
 
 def plot_image(image, gaussians, z_sum, contour_lines=True, title="", levels=8, bottom=0.0,
                left=0., right=2.,
                top=2.):
+    """
+
+    :param image: 2D-image in rgb to plot
+    :param gaussians: [gaussian_1, ... , gaussian_n] gaussians from which the image is calculated
+    :param z_sum: 2D-weights of combined gaussians
+    :param contour_lines: if true contourlines are plotted
+    :param title: title of picture
+    :param levels: number of contourlines
+    :return:
+    """
     if contour_lines:
         contours = find_contour_lines(z_sum, levels)
         for i in contours:
@@ -189,6 +250,13 @@ def plot_image(image, gaussians, z_sum, contour_lines=True, title="", levels=8, 
 
 
 def find_contour_lines(z_value, num_of_levels, verbose=False):
+    """
+    returns num_of_levels contourlines for given weights
+    :param z_value: 2D-weight
+    :param num_of_levels: number of contour-lines to return
+    :param verbose: outputs additional information
+    :return: [contour-lines_1, ... , contourlines_n]
+    """
     x_min, x_max = np.min(z_value), np.max(z_value)
     levels = np.linspace(x_min, x_max, num_of_levels + 2)
     if verbose:
@@ -200,6 +268,15 @@ def find_contour_lines(z_value, num_of_levels, verbose=False):
 
 
 def find_contour_lines_bruteforce(z_value, img, num_of_levels, epsilon=0.00011, verbose=False):
+    """
+
+    :param z_value: 2D-weight
+    :param img: 2D-image
+    :param num_of_levels: number of contour-lines to return
+    :param epsilon: everythink closer to the result of a contour-line is concidert as contour-line
+    :param verbose: outputs additional information
+    :return: 2D-image with contour-lines
+    """
     x_min, x_max = np.min(z_value), np.max(z_value)
     levels = np.linspace(x_min, x_max, num_of_levels)
     if verbose:
@@ -325,7 +402,8 @@ def _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j
                                                                z_2[i][j], z_new[i][j]))
 
 
-def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space=None, useCImplementation=False, verbose=False, *args,
+def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space=None, useCImplementation=False,
+                                       verbose=False, *args,
                                        **kwargs):
     """
     Merges multiple pictures into one using a given blending-operator, the specific grade of blending is weighted by
@@ -349,7 +427,7 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
         result = c_picture_worker.callHierarchicMerge(images, z_values)
         if verbose:
             end = time.time()
-            print("{}s elapsed".format(end-start))
+            print("{}s elapsed".format(end - start))
         return result
     images = [_convert_rgb_image(np.asarray(img), None) for img in images]
     if any(img.ndim != 3 for img in images):

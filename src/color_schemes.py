@@ -130,6 +130,11 @@ grey_color_scheme = [[1.0, 1.0, 1.0],
 
 
 def get_main_color(colorscheme):
+    """
+    returns all colors in a brewer color-scheme
+    :param colorscheme: {colorscheme:colorscheme , colorscheme_name:colorscheme_name}brewer-colorscheme to output
+    :return: [rgb_1, ... rgb_12]
+    """
     return colorscheme["colorscheme"](colorscheme["colorscheme_name"], list(range(12)))
 
 
@@ -139,6 +144,17 @@ def _interpolate(color_array, start, end, position):
 
 
 def create_color_brewer_colorscheme(colorscheme_name, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):
+    """
+    creates a colorscheme based on the sequential colorschemes from http://colorbrewer2.org.
+
+    :param colorscheme_name: name of the colorscheme from http://colorbrewer2.org. blue, orange, green, purple, red, grey
+    :param levels: number of levels in the colorscheme
+    :param min_value: minimal value to work with. This is the lower bound of the colorscheme [0,1]
+    :param max_value: maximal value to work with. This is the upper bound of the colorscheme [0,1]
+    :param lvl_white: number of colors in list which are white, beginning from the first element
+    :param verbose: outputs additional information
+    :return:
+    """
     colorschemes = {"blue": blue_color_scheme, "green": green_color_scheme, "orange": orange_color_scheme,
                     "purple": purple_color_scheme, "red": red_color_scheme, "grey": grey_color_scheme}
     _colorscheme = colorschemes.get(colorscheme_name, blue_color_scheme)
@@ -165,13 +181,21 @@ def create_color_brewer_colorscheme(colorscheme_name, levels, min_value=0, max_v
 
 
 def get_colorbrewer_schemes():
+    """
+    returns all available colorpaletts from brewer
+    :return: [{colorscheme: colorscheme_1, "colorscheme_name": colorscheme_name_1}, ... , {colorscheme: colorscheme_n, colorscheme_name: colorscheme_name_n}]
+    """
     colorscheme_names = ["blue", "orange", "green", "red", "purple"]
     return [{"colorscheme": create_color_brewer_colorscheme, "colorscheme_name": colorscheme_name} for colorscheme_name in
             colorscheme_names]
 
 
 def get_background_colorbrewer_scheme():
-    return {"color_scheme": create_color_brewer_colorscheme, "colorscheme": "grey"}
+    """
+    returns a grey colorpalett from brewer
+    :return: {colorscheme: create_color_brewer_colorscheme, colorscheme_name: grey}
+    """
+    return {"colorscheme": create_color_brewer_colorscheme, "colorscheme_name": "grey"}
 
 
 def create_hsl_colorscheme(startcolor, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):
