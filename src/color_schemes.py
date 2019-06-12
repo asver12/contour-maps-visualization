@@ -170,7 +170,7 @@ def get_colorbrewer_schemes():
             colorscheme_names]
 
 
-def getBackgroundColorBrewerScheme():
+def get_background_colorbrewer_scheme():
     return {"color_scheme": create_color_brewer_colorscheme, "colorscheme": "grey"}
 
 

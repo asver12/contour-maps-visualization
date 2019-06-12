@@ -175,10 +175,10 @@ int main(int argc, char* argv[]) {
   matrizes[3] = e.data();
 
   std::vector<double*> weights(4);
-  weights[0] = a.data();
-  weights[1] = b.data();
-  weights[2] = c.data();
-  weights[3] = d.data();
+  weights[0] = weightsA.data();
+  weights[1] = weightsB.data();
+  weights[2] = weightsD.data();
+  weights[3] = weightsE.data();
 
   printf(
       "------------------------------------------------------------------------"
