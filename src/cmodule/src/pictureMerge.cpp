@@ -125,61 +125,107 @@ void pictureMerge::mmMultHierarchic(int m, int n, int numberOfMatrizes,
                                     double **matrizes, double **weights,
                                     double *C, double *weightsC) {
 #pragma omp parallel for
-  for (int i = 0; i < m; ++i) {
-    for (int j = 0; j < n; ++j) {
-      // sortieren der Punkte nacht ihrer Gewichtung
-      struct indexTracker sorted_list[numberOfMatrizes];
-      struct blendingOperators::returnStruct returnValues;
+  for (int i = 0; i < m * n; ++i) {
+    // sortieren der Punkte nacht ihrer Gewichtung
+    struct indexTracker sorted_list[numberOfMatrizes];
+    struct blendingOperators::returnStruct returnValues;
 
-      for (int l = 0; l < numberOfMatrizes; ++l) {
-        sorted_list[l].value = weights[l][j + i * n];
-        sorted_list[l].index = l;
-      }
-      std::qsort(sorted_list, numberOfMatrizes, sizeof(sorted_list[0]),
-                 cmpfunc);
+    for (int l = 0; l < numberOfMatrizes; ++l) {
+      sorted_list[l].value = weights[l][i];
+      sorted_list[l].index = l;
+    }
+    std::qsort(sorted_list, numberOfMatrizes, sizeof(sorted_list[0]), cmpfunc);
 
-      int isZero =
-          checkIfColor(&matrizes[sorted_list[0].index][(j + i * n) * 3],
-                       &matrizes[sorted_list[1].index][(j + i * n) * 3]);
-      if (isZero == 1) {
-        returnValues.returnList =
-            &(matrizes[sorted_list[1].index][(j + i * n) * 3]);
-        returnValues.returnWeight = weights[sorted_list[1].index][j + i * n];
-      } else if (isZero == 2) {
-        returnValues.returnList =
-            &(matrizes[sorted_list[0].index][(j + i * n) * 3]);
-        returnValues.returnWeight = weights[sorted_list[0].index][j + i * n];
-      } else {
-        returnValues = blendingOperators::weightedPorterDuffSourceOver(
-            &matrizes[sorted_list[0].index][(j + i * n) * 3],
-            weights[sorted_list[0].index][j + i * n],
-            &matrizes[sorted_list[1].index][(j + i * n) * 3],
-            weights[sorted_list[1].index][j + i * n]);
-      }
-      if (numberOfMatrizes > 2) {
-        for (int k = 2; k < numberOfMatrizes; ++k) {
-          isZero =
-              checkIfColor(returnValues.returnList,
-                           &matrizes[sorted_list[k].index][(j + i * n) * 3]);
-          if (isZero == 1) {
-            returnValues.returnList =
-                &(matrizes[sorted_list[k].index][(j + i * n) * 3]);
-            returnValues.returnWeight =
-                weights[sorted_list[k].index][j + i * n];
-          } else if (isZero == 0) {
-            returnValues = blendingOperators::weightedPorterDuffSourceOver(
-                returnValues.returnList, returnValues.returnWeight,
-                &matrizes[sorted_list[k].index][(j + i * n) * 3],
-                weights[sorted_list[k].index][j + i * n]);
-          }
+    int isZero = checkIfColor(&matrizes[sorted_list[0].index][i * 3],
+                              &matrizes[sorted_list[1].index][i * 3]);
+    if (isZero == 1) {
+      returnValues.returnList = &(matrizes[sorted_list[1].index][i * 3]);
+      returnValues.returnWeight = weights[sorted_list[1].index][i];
+    } else if (isZero == 2) {
+      returnValues.returnList = &(matrizes[sorted_list[0].index][i * 3]);
+      returnValues.returnWeight = weights[sorted_list[0].index][i];
+    } else {
+      returnValues = blendingOperators::weightedPorterDuffSourceOver(
+          &matrizes[sorted_list[0].index][i * 3],
+          weights[sorted_list[0].index][i],
+          &matrizes[sorted_list[1].index][i * 3],
+          weights[sorted_list[1].index][i]);
+    }
+    if (numberOfMatrizes > 2) {
+      for (int k = 2; k < numberOfMatrizes; ++k) {
+        isZero = checkIfColor(returnValues.returnList,
+                              &matrizes[sorted_list[k].index][i * 3]);
+        if (isZero == 1) {
+          returnValues.returnList = &(matrizes[sorted_list[k].index][i * 3]);
+          returnValues.returnWeight = weights[sorted_list[k].index][i];
+        } else if (isZero == 0) {
+          returnValues = blendingOperators::weightedPorterDuffSourceOver(
+              returnValues.returnList, returnValues.returnWeight,
+              &matrizes[sorted_list[k].index][i * 3],
+              weights[sorted_list[k].index][i]);
         }
       }
-      for (int k = 0; k < 3; ++k) {
-        C[(j + i * n) * 3 + k] = returnValues.returnList[k];
-      }
-      weightsC[j + i * n] = returnValues.returnWeight;
     }
+    for (int k = 0; k < 3; ++k) {
+      C[i * 3 + k] = returnValues.returnList[k];
+    }
+    weightsC[i] = returnValues.returnWeight;
   }
+  // for (int i = 0; i < m; ++i) {
+  //   for (int j = 0; j < n; ++j) {
+  //     // sortieren der Punkte nacht ihrer Gewichtung
+  //     struct indexTracker sorted_list[numberOfMatrizes];
+  //     struct blendingOperators::returnStruct returnValues;
+  //
+  //     for (int l = 0; l < numberOfMatrizes; ++l) {
+  //       sorted_list[l].value = weights[l][j + i * n];
+  //       sorted_list[l].index = l;
+  //     }
+  //     std::qsort(sorted_list, numberOfMatrizes, sizeof(sorted_list[0]),
+  //                cmpfunc);
+  //
+  //     int isZero =
+  //         checkIfColor(&matrizes[sorted_list[0].index][(j + i * n) * 3],
+  //                      &matrizes[sorted_list[1].index][(j + i * n) * 3]);
+  //     if (isZero == 1) {
+  //       returnValues.returnList =
+  //           &(matrizes[sorted_list[1].index][(j + i * n) * 3]);
+  //       returnValues.returnWeight = weights[sorted_list[1].index][j + i * n];
+  //     } else if (isZero == 2) {
+  //       returnValues.returnList =
+  //           &(matrizes[sorted_list[0].index][(j + i * n) * 3]);
+  //       returnValues.returnWeight = weights[sorted_list[0].index][j + i * n];
+  //     } else {
+  //       returnValues = blendingOperators::weightedPorterDuffSourceOver(
+  //           &matrizes[sorted_list[0].index][(j + i * n) * 3],
+  //           weights[sorted_list[0].index][j + i * n],
+  //           &matrizes[sorted_list[1].index][(j + i * n) * 3],
+  //           weights[sorted_list[1].index][j + i * n]);
+  //     }
+  //     if (numberOfMatrizes > 2) {
+  //       for (int k = 2; k < numberOfMatrizes; ++k) {
+  //         isZero =
+  //             checkIfColor(returnValues.returnList,
+  //                          &matrizes[sorted_list[k].index][(j + i * n) * 3]);
+  //         if (isZero == 1) {
+  //           returnValues.returnList =
+  //               &(matrizes[sorted_list[k].index][(j + i * n) * 3]);
+  //           returnValues.returnWeight =
+  //               weights[sorted_list[k].index][j + i * n];
+  //         } else if (isZero == 0) {
+  //           returnValues = blendingOperators::weightedPorterDuffSourceOver(
+  //               returnValues.returnList, returnValues.returnWeight,
+  //               &matrizes[sorted_list[k].index][(j + i * n) * 3],
+  //               weights[sorted_list[k].index][j + i * n]);
+  //         }
+  //       }
+  //     }
+  //     for (int k = 0; k < 3; ++k) {
+  //       C[(j + i * n) * 3 + k] = returnValues.returnList[k];
+  //     }
+  //     weightsC[j + i * n] = returnValues.returnWeight;
+  //   }
+  // }
 }
 
 struct pictureMerge::picStruct pictureMerge::mmMultHierarchicReturn(

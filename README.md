@@ -9,6 +9,7 @@ In order to achieve this goal we are going to try a bunch of different approache
 * to change the color space
 * to indivdualize the mixing operator for each pixel
 
+
 ## Getting Started
 
 ### Prerequisites

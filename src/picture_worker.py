@@ -7,7 +7,7 @@ from skimage import color, measure
 
 from matplotlib.lines import Line2D
 
-from src import color_operations, hierarchic_blending_operator, helper, c_picture_worker
+from src import color_operations, hierarchic_blending_operator, helper, c_picture_worker, color_schemes
 
 
 def get_picture(x_min, x_max, y_min, y_max, X, Y, Z, levels, *args, **kwargs):
@@ -170,13 +170,15 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
     return z_list, image, z_sum
 
 
-def plot_images(images, gaussians, z_sums, colors=None, contour_lines=True, levels=8, title="", columns=5,
+def plot_images(images, gaussians, z_sums, colors=[], contour_lines=True, contour_lines_weighted=True, levels=8,
+                title="", columns=5,
                 bottom=0.0,
                 left=0., right=2.,
                 top=2.):
     """
     plots images for given gaussians
 
+    :param contour_lines_weighted:
     :param colors: color of each gaussian. Gonna be plotted as legend
     :param images: [image_1, ... , image_n]
     :param gaussians: [[gaussian_1_1, ... gaussian_1_m], ... , [gaussian_n_1, ... gaussian_n_m]] gaussians from which the image is calculated
@@ -186,50 +188,56 @@ def plot_images(images, gaussians, z_sums, colors=None, contour_lines=True, leve
     :param columns: number of pictures next to each other
     :return:
     """
+
     print("{}".format(["mu_x", "variance_x", "mu_y", "variance_y"]))
     if len(images) == 1:
-        plot_image(images[0], gaussians[0], z_sums[0], contour_lines, title, levels, bottom, left,
-                   right, top)
+        title_j = ""
+        if title == "" and gaussians:
+            title_j = '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[0])
+        elif len(title) > columns:
+            title_j = title[columns]
+        color_legend = colors if colors else []
+        plot_image(plt, images[0], gaussians[0], z_sums[0], color_legend, contour_lines, contour_lines_weighted,
+                   title_j, levels)
+        plt.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
     else:
         for i in range(math.ceil(len(images) / columns)):
             subplot = images[i * columns:(i + 1) * columns]
             sub_sums = z_sums[i * columns:(i + 1) * columns]
             fig, axes = plt.subplots(1, len(subplot), sharex='col', sharey='row')
             if len(subplot) == 1:
-                axes.imshow(subplot[0])
-                if contour_lines:
-                    contours = find_contour_lines(sub_sums[0], levels)
-                    for k in contours:
-                        for contour in k:
-                            axes.plot(contour[:, 1], contour[:, 0], linewidth=1, color="black")
-                axes.axis("off")
+
+                title_j = ""
+                if title == "" and gaussians:
+                    title_j = '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[i * columns])
+                elif len(title) > i * columns:
+                    title_j = title[i * columns]
+                plot_image(axes, subplot[0], gaussians[i * columns], sub_sums[0], colors,
+                           contour_lines,
+                           contour_lines_weighted,
+                           title_j,
+                           levels)
             else:
                 for j in range(len(subplot)):
-                    axes[j].imshow(subplot[j])
-                    if contour_lines:
-                        contours = find_contour_lines(sub_sums[j], levels)
-                        for k in contours:
-                            for contour in k:
-                                axes[j].plot(contour[:, 1], contour[:, 0], linewidth=1, color="black")
+                    title_j = ""
                     if title == "" and gaussians:
-                        axes[j].set_title(
-                            '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[j + i * columns]))
+                        title_j = '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[j + i * columns])
                     elif len(title) > j + i * columns:
-                        axes[j].set_title(title[j + i * columns])
-                    axes[j].axis("off")
-                    if colors:
-                        custom_lines = [Line2D([0], [0], color=colors[i], lw=4) for i in
-                                        range(len(gaussians[j + i * columns]))]
-                        axes[j].legend(custom_lines, [i for i in range(len(gaussians[j + i * columns]))],
-                                       loc='upper left', frameon=False)
+                        title_j = title[j + i * columns]
+                    plot_image(axes[j], subplot[j], gaussians[j + i * columns], sub_sums[j], colors,
+                               contour_lines,
+                               contour_lines_weighted,
+                               title_j,
+                               levels)
             fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
 
 
-def plot_image(image, gaussians, z_sum, contour_lines=True, title="", levels=8, bottom=0.0,
-               left=0., right=2.,
-               top=2.):
+def plot_image(axis, image, gaussians, z_sum, colors=None, contour_lines=True, contour_lines_weighted=True, title="",
+               levels=8):
     """
 
+    :param contour_lines_weighted:
+    :param colors: [color_1, ... , color_n] colors of each gaussian
     :param image: 2D-image in rgb to plot
     :param gaussians: [gaussian_1, ... , gaussian_n] gaussians from which the image is calculated
     :param z_sum: 2D-weights of combined gaussians
@@ -238,15 +246,32 @@ def plot_image(image, gaussians, z_sum, contour_lines=True, title="", levels=8, 
     :param levels: number of contourlines
     :return:
     """
+    if colors is None:
+        colors = []
     if contour_lines:
+        contour_lines_colorscheme = color_schemes.get_background_colorbrewer_scheme()
+        if contour_lines_weighted:
+            contour_lines_colors = contour_lines_colorscheme["colorscheme"](
+                contour_lines_colorscheme["colorscheme_name"],
+                range(levels), 0.5, 1, lvl_white=0)
+        else:
+            contour_lines_colors = ["black" for i in range(levels + 1)]
         contours = find_contour_lines(z_sum, levels)
-        for i in contours:
-            for contour in i:
-                plt.plot(contour[:, 1], contour[:, 0], linewidth=1, color="black")
-    plt.imshow(image)
-    plt.axis("off")
-    plt.title('\n'.join("{}".format(gau[4:-1]) for gau in gaussians) if title == "" and gaussians else title)
-    plt.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
+        for i, k in enumerate(contours):
+            for contour in k:
+                axis.plot(contour[:, 1], contour[:, 0], linewidth=2, color=contour_lines_colors[i])
+    axis.imshow(image)
+    if isinstance(axis, type(plt)):
+        axis.title(title)
+    else:
+        axis.set_title(title)
+    if colors:
+        custom_lines = [Line2D([0], [0], color=colors[i], lw=4) for i in
+                        range(len(gaussians))]
+        axis.legend(custom_lines, [i for i in range(len(gaussians))],
+                    loc='upper left', frameon=False)
+
+    axis.axis("off")
 
 
 def find_contour_lines(z_value, num_of_levels, verbose=False):
