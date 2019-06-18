@@ -1,6 +1,6 @@
 import numpy as np
 
-from src import helper
+from src import helper, color_schemes
 
 
 def blend_color(blending_operator, color_1, color_2, *args, **kwargs):
@@ -14,6 +14,15 @@ def blend_color(blending_operator, color_1, color_2, *args, **kwargs):
     :return: new color
     """
     return blending_operator(color_1, color_2, *args, **kwargs)
+
+
+def get_colorcodes(colorschemes):
+    """
+    Works only for brewer-colorschemes atm
+    :param colorschemes: brewer-colorscheme
+    :return:
+    """
+    return [color_schemes.get_main_color(i)[-1] for i in colorschemes]
 
 
 def map_colors(x, colormap, levels, split=True):
