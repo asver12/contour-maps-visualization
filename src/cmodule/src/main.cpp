@@ -9,7 +9,9 @@ using std::chrono::system_clock;
 using namespace std;
 
 #include "blendingOperators.hpp"
+#include "cieLab.hpp"
 #include "pictureMerge.hpp"
+#include "rgb.hpp"
 
 void printColorMatrix(double const* matrix, int m, int n) {
   for (int i = 0; i < m; ++i) {
@@ -51,7 +53,6 @@ int main(int argc, char* argv[]) {
   double frontArray[] = {0.5, 0.5, 0.5};
   double backArray[] = {0.3, 0.3, 0.3};
   double alpha = 0.5;
-
   double* resultArray;
   resultArray =
       blendingOperators::porterDuffSourceOver(frontArray, backArray, alpha);
@@ -187,8 +188,9 @@ int main(int argc, char* argv[]) {
       "--------------------------------------Hierarchic------------------------"
       "\n");
   start = system_clock::now();
+  const char* colorspace = "lab";
   pictureMerge::mmMultHierarchic(m, n, 4, matrizes.data(), weights.data(),
-                                 c.data(), weightsC.data());
+                                 c.data(), weightsC.data(), colorspace);
   // Ende der Zeitmessung
   end = system_clock::now();
 
@@ -198,12 +200,5 @@ int main(int argc, char* argv[]) {
   printf("Weights:\n");
   printMatrix(weightsC.data(), m, n);
   printf("Hierarchic with 4 Matrizes: %f\n", elapsed_seconds);
-  printf("\n");
-
-  struct pictureMerge::picStruct cReturns =
-      pictureMerge::mmMultHierarchicReturn(m, n, 4, matrizes.data(),
-                                           weights.data());
-  printColorMatrix(cReturns.returnList, m, n);
-  printMatrix(cReturns.returnWeight, m, n);
   return 0;
 }

@@ -1,4 +1,4 @@
-from ctypes import cdll, c_int, byref, c_double, POINTER, Structure
+from ctypes import cdll, c_int, byref, c_double, POINTER, Structure, c_char
 import os
 import numpy as np
 
@@ -11,16 +11,11 @@ except OSError as e:
 
 dtype = np.float
 
-lib.mmMultSimpleReturn.argtypes = c_int, c_int, POINTER(c_double), POINTER(c_double), POINTER(c_double), POINTER(
-    c_double)
-
 
 class returnStruct(Structure):
     _fields_ = [("returnList", POINTER(c_double)),
                 ("returnWeight", POINTER(c_double))]
 
-
-lib.mmMultSimpleReturn.restype = returnStruct
 
 lib.mmMultSimple.argtypes = [c_int, c_int, POINTER(c_double), POINTER(c_double), POINTER(c_double), POINTER(c_double),
                              POINTER(c_double), POINTER(c_double)]
@@ -75,18 +70,19 @@ def callSimpleMerge(matrizes, weight, verbose=False):
 doublepp = np.ctypeslib.ndpointer(dtype=np.uintp)
 
 lib.mmMultHierarchic.argtypes = c_int, c_int, c_int, doublepp, doublepp, POINTER(c_double), POINTER(
-    c_double)
+    c_double), POINTER(c_char)
 lib.mmMultHierarchic.restype = None
 
 
-def callHierarchicMerge(matrizes, weights):
+def call_hierarchic_merge(matrizes, weights, colorspace ="rgb"):
     """
     Combines multiple matrizes hierarchic and returns the combined image. Uses hierarchic porter-duff-source-over
     Only works with rgb-Images atm
 
+    :param colorspace: rgb and lab supported so far
     :param matrizes: [image_1, ... , image_n] list of images to use
     :param weights: [weight_1, ... , weight_n] corresponding weights to images
-    :return: hierarchicly build new 2D-image
+    :return: hierarchically build new 2D-image
     """
     num_of_matrizes, m, n = len(matrizes), len(matrizes[0]), len(matrizes[0][0])
 
@@ -102,7 +98,7 @@ def callHierarchicMerge(matrizes, weights):
     c_input_weights = (input_weights.__array_interface__['data'][0]
             + np.arange(input_weights.shape[0]) * input_weights.strides[0]).astype(np.uintp)
 
-    lib.mmMultHierarchic(m, n, num_of_matrizes, c_input_matrizes, c_input_weights, c_new_matrix_1, c_new_weight_1)
+    lib.mmMultHierarchic(m, n, num_of_matrizes, c_input_matrizes, c_input_weights, c_new_matrix_1, c_new_weight_1, colorspace.encode('utf-8'))
     return np.ctypeslib.as_array(c_new_matrix_1).reshape(m, n, 3), np.ctypeslib.as_array(c_new_weight_1).reshape(m, n,
                                                                                                                  1)
 
@@ -158,7 +154,7 @@ if __name__ == "__main__":
 
     pics = [Z_color, Z_color_1, Z_color_2]
     weights = [Z, Z_1, Z_2]
-    results = callHierarchicMerge(pics, weights)
+    results = call_hierarchic_merge(pics, weights)
     print(results[0])
     print(picture_worker.combine_multiple_images_hierarchic(hierarchic_blending_operator.porter_duff_source_over,
                                                             pics, weights)[0])

@@ -133,7 +133,8 @@ def get_image_list(gaussians, colorschemes, borders=None, verbose=False):
 
 
 def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blending_operator.porter_duff_source_over,
-                   useCImplementation=False,
+                   color_space="rgb",
+                   use_c_implementation=False,
                    borders=None, verbose=False):
     """
     Generates an image from a list of gaussians and a colorscheme for each
@@ -142,7 +143,7 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
     :param colorschemes: [{colorscheme: color_scheme_function_1, colorscheme_name: colorscheme_name_1},
                             ... ]{colorscheme: color_scheme_function_n, colorscheme_name: colorscheme_name_n}]
     :param blending_operator: default is hierarchic-porter-duff-source-over
-    :param useCImplementation: if true the c-implementation is used which is approc. 3-4 times faster but only works with hierarchic-porter-duff-source-over
+    :param use_c_implementation: if true the c-implementation is used which is approc. 3-4 times faster but only works with hierarchic-porter-duff-source-over rgb and lab
     :param borders: range in which the pixel of the pictures are normalizes
     :param verbose: outputs additional information
     :return: Weights [2D-weight_1, ... ,2D-weight_n], 2D-image, Sum of all weights 2D-weight
@@ -165,8 +166,8 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
         img, _ = get_colorgrid(z, **colorscheme, min_value=z_min_weight, max_value=z_max_weight, split=True,
                                verbose=verbose)
         img_list.append(img)
-    image, alpha = combine_multiple_images_hierarchic(blending_operator, img_list, z_list,
-                                                      useCImplementation=useCImplementation, verbose=verbose)
+    image, alpha = combine_multiple_images_hierarchic(blending_operator, img_list, z_list, color_space=color_space,
+                                                      use_c_implementation=use_c_implementation, verbose=verbose)
     return z_list, image, z_sum
 
 
@@ -427,12 +428,13 @@ def _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j
                                                                z_2[i][j], z_new[i][j]))
 
 
-def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space=None, useCImplementation=False,
+def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space="rgb", use_c_implementation=False,
                                        verbose=False, *args,
                                        **kwargs):
     """
     Merges multiple pictures into one using a given blending-operator, the specific grade of blending is weighted by
     the z_values of each image. The pixel of each image is merged by its weight. From lowest to highest
+    :param use_c_implementation: only works with rgb and lab at the moment
     :param blending_operator: operator which is used to mix the images point by point
     :param images: [image_1, image_2, ... , image_n]
     :param z_values: [z_values_1, z_values_2, ... , z_values_n]
@@ -442,18 +444,18 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
     :param kwargs:
     :return:
     """
-
+    images = [_convert_rgb_image(np.asarray(img), None) for img in images]
     if verbose:
         import time
         start = time.time()
-    if useCImplementation:
+    if use_c_implementation:
         if verbose:
             print("Using C-Implementation")
-        result = c_picture_worker.callHierarchicMerge(images, z_values)
+        reduce, z_new = c_picture_worker.call_hierarchic_merge(images, z_values, color_space)
         if verbose:
             end = time.time()
             print("{}s elapsed".format(end - start))
-        return result
+        return reduce, z_new
     images = [_convert_rgb_image(np.asarray(img), None) for img in images]
     if any(img.ndim != 3 for img in images):
         raise Exception("Images need a dimension of 3")
@@ -461,14 +463,14 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
     if verbose:
         print(np_images)
         print(images)
-
     z_new: ndarray = np.zeros([len(images[0]), len(images[0][0]), 1])
     reduce = np.zeros([len(images[0]), len(images[0][0]), len(images[0][0][0])])
     for i in range(len(images[0])):
         for j in range(len(images[0][0])):
             # sort z_values for the point and remember image it belongs to
             sorted_values = sorted([(k, x[i][j]) for k, x in enumerate(z_values)], key=lambda x: x[1])
-            _hierarchic_blending(args, blending_operator, i, images[sorted_values[0][0]], images[sorted_values[1][0]],
+            _hierarchic_blending(args, blending_operator, i, images[sorted_values[0][0]],
+                                 images[sorted_values[1][0]],
                                  np_images[sorted_values[0][0]], np_images[sorted_values[1][0]],
                                  j, kwargs, reduce, verbose,
                                  z_values[sorted_values[0][0]],
