@@ -128,6 +128,8 @@ grey_color_scheme = [[1.0, 1.0, 1.0],
                      [0.1450980392156863, 0.1450980392156863, 0.1450980392156863],
                      [0.0, 0.0, 0.0]]
 
+_colorschemes = {"blue": blue_color_scheme, "green": green_color_scheme, "orange": orange_color_scheme,
+                "purple": purple_color_scheme, "red": red_color_scheme, "grey": grey_color_scheme}
 
 def get_main_color(colorscheme):
     """
@@ -135,36 +137,40 @@ def get_main_color(colorscheme):
     :param colorscheme: {colorscheme:colorscheme , colorscheme_name:colorscheme_name}brewer-colorscheme to output
     :return: [rgb_1, ... rgb_12]
     """
-    return colorscheme["colorscheme"](colorscheme["colorscheme_name"], list(range(12)))
+    return _colorschemes[colorscheme["colorscheme_name"]]
 
 
 def _interpolate(color_array, start, end, position):
+    """
+    find the exact position of a point in between two colors.
+
+    :param color_array: colors in which the rang is
+    :param start: index of the first color to use
+    :param end: index of the second color to use
+    :param position: position at which the new color is supposed to be
+    :return: values for the new colorindex
+    """
     percentage = (position - start) / (end - start)
     return (1. - percentage) * np.array(color_array[start]) + percentage * np.array(color_array[end])
 
 
-def create_color_brewer_colorscheme(colorscheme_name, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):
+def create_color_brewer_colorscheme(colorscheme_name, levels, lvl_white=1, verbose=False):
     """
     creates a colorscheme based on the sequential colorschemes from http://colorbrewer2.org.
 
     :param colorscheme_name: name of the colorscheme from http://colorbrewer2.org. blue, orange, green, purple, red, grey
-    :param levels: number of levels in the colorscheme
+    :param levels: points at which the colors are returned inbetween [0, 1] at exactly these points the colors are selected
     :param min_value: minimal value to work with. This is the lower bound of the colorscheme [0,1]
     :param max_value: maximal value to work with. This is the upper bound of the colorscheme [0,1]
     :param lvl_white: number of colors in list which are white, beginning from the first element
     :param verbose: outputs additional information
     :return:
     """
-    colorschemes = {"blue": blue_color_scheme, "green": green_color_scheme, "orange": orange_color_scheme,
-                    "purple": purple_color_scheme, "red": red_color_scheme, "grey": grey_color_scheme}
-    _colorscheme = colorschemes.get(colorscheme_name, blue_color_scheme)
-    _check_constrains(min_value, max_value)
-    norm_levels = np.linspace(min_value, max_value, len(levels) + 1)
-    if verbose:
-        print("Min: {} | Max: {}".format(min_value, max_value))
+    _colorscheme = _colorschemes.get(colorscheme_name, blue_color_scheme)
     colors = []
     num_of_colors = len(_colorscheme) - 1
-    for i in norm_levels:
+    for i in levels:
+        # interpolation between the colors in the colorscheme
         start = math.floor(i * num_of_colors)
         end = math.ceil(i * num_of_colors)
         if verbose:
@@ -173,7 +179,7 @@ def create_color_brewer_colorscheme(colorscheme_name, levels, min_value=0, max_v
             colors.append(np.append(_colorscheme[start], 1.))
         else:
             colors.append(np.append(_interpolate(_colorscheme, start, end, i * num_of_colors), 1.0))
-    for i in range(lvl_white + 1 if lvl_white < len(levels) else len(levels) + 1):
+    for i in range(lvl_white if lvl_white < len(levels) else len(levels)):
         colors[i] = np.array([1., 1., 1., 1.])
     if verbose:
         print("{}[{}]".format(colors, len(colors)))
@@ -186,7 +192,8 @@ def get_colorbrewer_schemes():
     :return: [{colorscheme: colorscheme_1, "colorscheme_name": colorscheme_name_1}, ... , {colorscheme: colorscheme_n, colorscheme_name: colorscheme_name_n}]
     """
     colorscheme_names = ["blue", "orange", "green", "red", "purple"]
-    return [{"colorscheme": create_color_brewer_colorscheme, "colorscheme_name": colorscheme_name} for colorscheme_name in
+    return [{"colorscheme": create_color_brewer_colorscheme, "colorscheme_name": colorscheme_name} for colorscheme_name
+            in
             colorscheme_names]
 
 

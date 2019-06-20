@@ -9,6 +9,8 @@ from matplotlib.lines import Line2D
 
 from src import color_operations, hierarchic_blending_operator, helper, c_picture_worker, color_schemes
 
+from density_visualization import iso_levels
+
 
 def get_picture(x_min, x_max, y_min, y_max, X, Y, Z, levels, *args, **kwargs):
     matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
@@ -26,7 +28,33 @@ def get_picture(x_min, x_max, y_min, y_max, X, Y, Z, levels, *args, **kwargs):
     return img
 
 
-def get_colorgrid(X, colorscheme, num_of_levels=10, split=True, *args, **kwargs):
+def _check_constrains(min_value, max_value):
+    if min_value < 0. or min_value > max_value:
+        raise Exception("{} is not accepted as minimum value".format(min_value))
+    if max_value > 1.:
+        raise Exception("{} is not accepted as maximum value".format(max_value))
+
+
+def get_iso_levels(X, method="equal_density", num_of_levels=8):
+    """
+    generates iso-lines to a given 2D-array
+    :param X: picture to generate iso-levels to
+    :param method: normal or equal_density available right now
+    :param num_of_levels: number of iso-lines to generate
+    :return: array([iso_line_1, ... , iso_line_n ])
+    """
+    if method == "equal_density":
+        return iso_levels.equi_prob_per_level(X, k=num_of_levels)
+    elif method == "equal_horizontal":
+        return iso_levels.equi_horizontal_prob_per_level(X, k=num_of_levels)
+    elif method == "equal_value":
+        return iso_levels.equi_value(X, k=num_of_levels)
+    return np.linspace(np.min(X), np.max(X), num_of_levels + 2)[1:-1]
+
+
+def get_colorgrid(X, colorscheme, method="equal_density", num_of_levels=8, min_value=0., max_value=1., split=True,
+                  verbose=False, *args,
+                  **kwargs):
     """
     Takes a 2D-Grid and maps it to a color-scheme. Therefor it generates a colormap with the given number of levels
 
@@ -36,10 +64,23 @@ def get_colorgrid(X, colorscheme, num_of_levels=10, split=True, *args, **kwargs)
     :param args:
     :return: 2D-Grid with color values from the color-scheme
     """
-    x_min, x_max = np.min(X), np.max(X)
-    levels = np.linspace(x_min, x_max, num_of_levels)  # [1:6] ?
-    colormap = colorscheme(levels=levels, *args, **kwargs)
+    _check_constrains(min_value, max_value)
+    if verbose:
+        print("Min: {} | Max: {}".format(min_value, max_value))
+
+    # generate colors to chose from
+    norm_levels = get_iso_levels(X, method=method, num_of_levels=num_of_levels + 2)
+    norm_levels = _norm_levels(norm_levels, min_value, max_value)
+    norm_levels = [(i + j) / 2 for i, j in zip(norm_levels[:-1], norm_levels[1:])]
+    colormap = colorscheme(levels=norm_levels, verbose=verbose, *args, **kwargs)
+
+    # replace points in image with matching colors
+    levels = get_iso_levels(X, method=method, num_of_levels=num_of_levels)
     return color_operations.map_colors(X, colormap, levels, split)
+
+
+def _norm_levels(levels, min_value=0., max_value=1.):
+    return np.interp(levels, (levels.min(), levels.max()), (min_value, max_value))
 
 
 def get_colors(X, color_scheme, num_of_levels=10, *args, **kwargs):
@@ -133,6 +174,7 @@ def get_image_list(gaussians, colorschemes, borders=None, verbose=False):
 
 
 def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+                   method="equal_density",
                    color_space="rgb",
                    use_c_implementation=False,
                    borders=None, verbose=False):
@@ -163,7 +205,8 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
     for z, colorscheme in zip(z_list, colorschemes):
         z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
         z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
-        img, _ = get_colorgrid(z, **colorscheme, min_value=z_min_weight, max_value=z_max_weight, split=True,
+        img, _ = get_colorgrid(z, **colorscheme, method=method, min_value=z_min_weight, max_value=z_max_weight,
+                               split=True,
                                verbose=verbose)
         img_list.append(img)
     image, alpha = combine_multiple_images_hierarchic(blending_operator, img_list, z_list, color_space=color_space,
@@ -171,7 +214,8 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
     return z_list, image, z_sum
 
 
-def plot_images(images, gaussians, z_sums, colors=[], contour_lines=True, contour_lines_weighted=True, levels=8,
+def plot_images(images, gaussians, z_sums, colors=[], contour_lines_method="equal_density", contour_lines=True,
+                contour_lines_weighted=True, num_of_levels=8,
                 title="", columns=5,
                 bottom=0.0,
                 left=0., right=2.,
@@ -185,7 +229,7 @@ def plot_images(images, gaussians, z_sums, colors=[], contour_lines=True, contou
     :param gaussians: [[gaussian_1_1, ... gaussian_1_m], ... , [gaussian_n_1, ... gaussian_n_m]] gaussians from which the image is calculated
     :param z_sums: [z_sum_1, ... z_sum_n]
     :param contour_lines: if true plot while be returned with contour-lines
-    :param levels: number of contour-lines returned
+    :param num_of_levels: number of contour-lines returned
     :param columns: number of pictures next to each other
     :return:
     """
@@ -198,8 +242,9 @@ def plot_images(images, gaussians, z_sums, colors=[], contour_lines=True, contou
         elif len(title) > columns:
             title_j = title[columns]
         color_legend = colors if colors else []
-        plot_image(plt, images[0], gaussians[0], z_sums[0], color_legend, contour_lines, contour_lines_weighted,
-                   title_j, levels)
+        plot_image(plt, images[0], gaussians[0], z_sums[0], color_legend, contour_lines_method, contour_lines,
+                   contour_lines_weighted,
+                   title_j, num_of_levels)
         plt.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
     else:
         for i in range(math.ceil(len(images) / columns)):
@@ -214,10 +259,11 @@ def plot_images(images, gaussians, z_sums, colors=[], contour_lines=True, contou
                 elif len(title) > i * columns:
                     title_j = title[i * columns]
                 plot_image(axes, subplot[0], gaussians[i * columns], sub_sums[0], colors,
+                           contour_lines_method,
                            contour_lines,
                            contour_lines_weighted,
                            title_j,
-                           levels)
+                           num_of_levels)
             else:
                 for j in range(len(subplot)):
                     title_j = ""
@@ -226,15 +272,17 @@ def plot_images(images, gaussians, z_sums, colors=[], contour_lines=True, contou
                     elif len(title) > j + i * columns:
                         title_j = title[j + i * columns]
                     plot_image(axes[j], subplot[j], gaussians[j + i * columns], sub_sums[j], colors,
+                               contour_lines_method,
                                contour_lines,
                                contour_lines_weighted,
                                title_j,
-                               levels)
+                               num_of_levels)
             fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
 
 
-def plot_image(axis, image, gaussians, z_sum, colors=None, contour_lines=True, contour_lines_weighted=True, title="",
-               levels=8):
+def plot_image(axis, image, gaussians, z_sum, colors=None, contour_lines_method="equal_density", contour_lines=True,
+               contour_lines_weighted=True, title="",
+               num_of_levels=8):
     """
 
     :param contour_lines_weighted:
@@ -244,19 +292,20 @@ def plot_image(axis, image, gaussians, z_sum, colors=None, contour_lines=True, c
     :param z_sum: 2D-weights of combined gaussians
     :param contour_lines: if true contourlines are plotted
     :param title: title of picture
-    :param levels: number of contourlines
+    :param num_of_levels: number of contourlines
     :return:
     """
     if colors is None:
         colors = []
     if contour_lines:
+        levels = get_iso_levels(z_sum, contour_lines_method, num_of_levels + 1)
         contour_lines_colorscheme = color_schemes.get_background_colorbrewer_scheme()
         if contour_lines_weighted:
             contour_lines_colors = contour_lines_colorscheme["colorscheme"](
                 contour_lines_colorscheme["colorscheme_name"],
-                range(levels), 0.5, 1, lvl_white=0)
+                _norm_levels(levels, 0.5, 1), lvl_white=0)
         else:
-            contour_lines_colors = ["black" for i in range(levels + 1)]
+            contour_lines_colors = ["black" for _ in range(num_of_levels + 1)]
         contours = find_contour_lines(z_sum, levels)
         for i, k in enumerate(contours):
             for contour in k:
@@ -275,7 +324,7 @@ def plot_image(axis, image, gaussians, z_sum, colors=None, contour_lines=True, c
     axis.axis("off")
 
 
-def find_contour_lines(z_value, num_of_levels, verbose=False):
+def find_contour_lines(X, levels, verbose=False):
     """
     returns num_of_levels contourlines for given weights
     :param z_value: 2D-weight
@@ -283,13 +332,12 @@ def find_contour_lines(z_value, num_of_levels, verbose=False):
     :param verbose: outputs additional information
     :return: [contour-lines_1, ... , contourlines_n]
     """
-    x_min, x_max = np.min(z_value), np.max(z_value)
-    levels = np.linspace(x_min, x_max, num_of_levels + 2)
+    # levels = get_iso_levels(X, method, num_of_levels + 1)
     if verbose:
         print(levels)
     contours = []
     for i in levels:
-        contours.append(measure.find_contours(z_value, i))
+        contours.append(measure.find_contours(X, i))
     return contours
 
 
@@ -428,7 +476,8 @@ def _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j
                                                                z_2[i][j], z_new[i][j]))
 
 
-def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space="rgb", use_c_implementation=False,
+def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space="rgb",
+                                       use_c_implementation=False,
                                        verbose=False, *args,
                                        **kwargs):
     """
