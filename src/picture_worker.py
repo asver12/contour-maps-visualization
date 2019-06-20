@@ -450,7 +450,7 @@ def combine_two_images_hierarchic(blending_operator, image, z_1, image2, z_2, co
     if verbose:
         print(image)
         print(img)
-    z_new: ndarray = np.zeros([len(img), len(img[0]), 1])
+    z_new = np.zeros([len(img), len(img[0]), 1])
     reduce = np.zeros([len(img), len(img[0]), len(img[0][0])])
     for i in range(len(img)):
         for j in range(len(img[0])):
@@ -512,7 +512,7 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
     if verbose:
         print(np_images)
         print(images)
-    z_new: ndarray = np.zeros([len(images[0]), len(images[0][0]), 1])
+    z_new = np.zeros([len(images[0]), len(images[0][0]), 1])
     reduce = np.zeros([len(images[0]), len(images[0][0]), len(images[0][0][0])])
     for i in range(len(images[0])):
         for j in range(len(images[0][0])):
