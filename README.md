@@ -1,6 +1,5 @@
 # contour-maps-visualisation
 
-[Jupyter Interactive Notebook](https://jupyter.org/)  [![Docs](https://jupyter-notebook.readthedocs.io/en/stable/]
 ## Objective
 Objective of this project is to find a appealing representation of multiple 2D-distribution where a third categorical variable is set. This should happen in a 2D-Cartesian coordinate system where the x- and y-axis represent the variables of the distribution. f(x,y) and the categorical variable is represented through the color. In detail it is your goal to make it optical possible to distinguish two overlapping distributions and be able to tell which one lays on top and which one lays on bottom. This should also be possible for more then two distributions overlapping each other.
 
@@ -25,3 +24,4 @@ Than install dependencies with:
 ```sh
 pip3 install -r requirements.txt
 ```
+[Jupyter Interactive Notebook](https://jupyter.org/) should be installed with requirements. If not install it manually
