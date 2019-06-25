@@ -1,38 +1,25 @@
-import math
 from matplotlib import pyplot as plt
 
-from src import picture_worker, color_operations
+def plot_images(images, gaussians, *args, **kwargs):
+    for img, gaussian in zip(images, gaussians):
+        plot_image(img, gaussian, *args, **kwargs)
 
 
-def plot_image(gaussians, colorschemes, levels=8,
-                title="", columns=5,
-                bottom=0.0,
-                left=0., right=2.,
-                top=2.):
-    images, _, _ = picture_worker.get_image_list(gaussians, colorschemes)
+def plot_image(images, gaussians, title="", with_axis=True):
+    """
 
-    print("{}".format(["mu_x", "variance_x", "mu_y", "variance_y"]))
-    colors = color_operations.get_colorcodes(colorschemes)[:len(images)]
-
-    if len(images) == 1:
-        picture_worker.plot_image(plt, images[0], gaussians[0], [], colors, False, False,
-                   "", levels)
-        plt.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
-    else:
-        for i in range(math.ceil(len(images) / columns)):
-            subplot = images[i * columns:(i + 1) * columns]
-            fig, axes = plt.subplots(1, len(subplot), sharex='col', sharey='row')
-            if len(subplot) == 1:
-                plot_image(axes, subplot[0], gaussians[i * columns], "", colors,
-                           False,
-                           False,
-                           "",
-                           levels)
-            else:
-                for j in range(len(subplot)):
-                    picture_worker.plot_image(axes[j], subplot[j], [gaussians[j + i * columns]], "", [colors[j]],
-                               False,
-                               False,
-                               "",
-                               levels)
-            fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
+    :param with_axis: if mathematical axis is shown or not
+    :param images: List of List of 2D-images in rgb to plot
+    :param gaussians: [gaussian_1, ... , gaussian_n] gaussians from which the image is calculated
+    :param title: title of picture
+    :return:
+    """
+    fig, axis = plt.subplots(1, len(images), sharex='col', sharey='row')
+    extent = gaussians[0][:4]
+    for i, image in enumerate(images):
+        axis[i].imshow(image, extent=extent, origin='lower')
+        if title == "" and gaussians:
+            title = ' '.join("{}".format(gaussians[i][4:-1]))
+        axis[i].set_title(title)
+    if not with_axis:
+        axis.axis("off")
