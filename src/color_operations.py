@@ -25,7 +25,7 @@ def get_colorcodes(colorschemes):
     return [color_schemes.get_main_color(i)[-1] for i in colorschemes]
 
 
-def map_colors(x, colormap, levels, split=True):
+def map_colors(x, colormap, levels, split=True, verbose=False):
     """
     Maps a color to given levels
 
@@ -43,8 +43,10 @@ def map_colors(x, colormap, levels, split=True):
         alpha_new = np.zeros([len(x), len(x[0]), 1])
         for i in range(len(x)):
             for j in range(len(x[0])):
-                index = helper.find_index(x[i][j], levels)
+                index = helper.find_index(x[i][j], levels, verbose=verbose)
                 x_new[i][j] = colormap[index][:split_number]
+                if verbose:
+                    print(x_new[i][j])
                 alpha_new[i][j] = colormap[index][3]
     else:
         raise Exception("{} + 1 !={}".format(len(levels), len(colormap)))

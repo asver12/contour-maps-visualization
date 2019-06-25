@@ -74,7 +74,7 @@ lib.mmMultHierarchic.argtypes = c_int, c_int, c_int, doublepp, doublepp, POINTER
 lib.mmMultHierarchic.restype = None
 
 
-def call_hierarchic_merge(matrizes, weights, colorspace ="rgb"):
+def call_hierarchic_merge(matrizes, weights, colorspace="lab"):
     """
     Combines multiple matrizes hierarchic and returns the combined image. Uses hierarchic porter-duff-source-over
     Only works with rgb-Images atm
@@ -94,11 +94,12 @@ def call_hierarchic_merge(matrizes, weights, colorspace ="rgb"):
     c_new_matrix_1 = create_cdll_type(new_matrix)
     c_new_weight_1 = create_cdll_type(new_weight)
     c_input_matrizes = (input_matrizes.__array_interface__['data'][0]
-           + np.arange(input_matrizes.shape[0]) * input_matrizes.strides[0]).astype(np.uintp)
+                        + np.arange(input_matrizes.shape[0]) * input_matrizes.strides[0]).astype(np.uintp)
     c_input_weights = (input_weights.__array_interface__['data'][0]
-            + np.arange(input_weights.shape[0]) * input_weights.strides[0]).astype(np.uintp)
+                       + np.arange(input_weights.shape[0]) * input_weights.strides[0]).astype(np.uintp)
 
-    lib.mmMultHierarchic(m, n, num_of_matrizes, c_input_matrizes, c_input_weights, c_new_matrix_1, c_new_weight_1, colorspace.encode('utf-8'))
+    lib.mmMultHierarchic(m, n, num_of_matrizes, c_input_matrizes, c_input_weights, c_new_matrix_1, c_new_weight_1,
+                         colorspace.encode('utf-8'))
     return np.ctypeslib.as_array(c_new_matrix_1).reshape(m, n, 3), np.ctypeslib.as_array(c_new_weight_1).reshape(m, n,
                                                                                                                  1)
 
@@ -118,25 +119,26 @@ if __name__ == "__main__":
     mu_y_1 = 0
     mu_variance_x_1 = 3
     mu_variance_y_1 = 15
-    gaussian_1 = (mu_x_1, mu_variance_x_1, mu_y_1, mu_variance_y_1)
+    gaussian_1 = ([mu_x_1, mu_y_1], [[mu_variance_x_1, 0.], [0., mu_variance_y_1]])
     mu_x_2 = 3
     mu_y_2 = 3
     mu_variance_x_2 = 4
     mu_variance_y_2 = 4
-    gaussian_2 = (mu_x_2, mu_variance_x_2, mu_y_2, mu_variance_y_2)
+    gaussian_2 = ([mu_x_2, mu_y_2], [[mu_variance_x_2, 0.], [0., mu_variance_y_2]])
     mu_x_3 = -2
     mu_y_3 = -1
     mu_variance_x_3 = 7
     mu_variance_y_3 = 7
-    gaussian_3 = (mu_x_3, mu_variance_x_3, mu_y_3, mu_variance_y_3)
+
+    gaussian_3 = ([mu_x_3, mu_y_3], [[mu_variance_x_3, 0.], [0., mu_variance_y_3]])
     X, Y, Z = helper.get_gaussian(x_min, x_max, y_min, y_max, *gaussian_1, size)
     X_1, Y_1, Z_1 = helper.get_gaussian(x_min, x_max, y_min, y_max, *gaussian_2, size)
     X_2, Y_2, Z_2 = helper.get_gaussian(x_min, x_max, y_min, y_max, *gaussian_3, size)
-    Z_color, Z_alpha = picture_worker.get_colorgrid(Z, color_schemes.matplotlib_colorschemes, 10, colorscheme="PuBu")
+    Z_color, Z_alpha = picture_worker.get_colorgrid(Z, color_schemes.matplotlib_colorschemes, 10, colorscheme_name="PuBu")
     Z_color_1, Z_alpha_1 = picture_worker.get_colorgrid(Z_1, color_schemes.matplotlib_colorschemes, 10,
-                                                        colorscheme="OrRd")
+                                                        colorscheme_name="OrRd")
     Z_color_2, Z_alpha_2 = picture_worker.get_colorgrid(Z_2, color_schemes.matplotlib_colorschemes, 10,
-                                                        colorscheme="RdPu")
+                                                        colorscheme_name="RdPu")
     matrizen = [Z, Z_1]
     colors = [Z_color, Z_color_1]
     result = callSimpleMerge(colors, matrizen)

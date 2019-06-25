@@ -1,6 +1,7 @@
 ###### Requirements without Version Specified ##########
 jupyter
 scikit-image
+scipy
 numpy
 matplotlib
 #

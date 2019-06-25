@@ -5,32 +5,80 @@ from scipy.stats import multivariate_normal
 from src import picture_worker, color_schemes
 
 
-def get_gaussian(x_min, x_max, y_min, y_max, mu_x=0.0, variance_x=0.0, mu_y=0.0, variance_y=0.0, size=500000):
+# def get_gaussian(x_min, x_max, y_min, y_max, mu_x=0.0, variance_x=0.0, mu_y=0.0, variance_y=0.0, size=500000):
+#     """
+#     returns a gaussian-distribution
+#
+#     :param x_min:
+#     :param x_max:
+#     :param y_min:
+#     :param y_max:
+#     :param mu_x:
+#     :param variance_x:
+#     :param mu_y:
+#     :param variance_y:
+#     :param size:
+#     :return:
+#     """
+#     xlist = np.linspace(x_min, x_max, size)
+#     ylist = np.linspace(y_min, y_max, size)
+#     X, Y = np.meshgrid(xlist, ylist)
+#     pos = np.empty(X.shape + (2,))
+#     pos[:, :, 0] = X
+#     pos[:, :, 1] = Y
+#     Z = multivariate_normal([mu_x, mu_y], [[variance_x, 0], [0, variance_y]])
+#     return X, Y, Z.pdf(pos)
+
+def normalize_array(X, old_min, old_max, new_min, new_max):
+    return (((X - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
+
+
+def normalize_2d_array(X, x_min_old, x_max_old, x_min_new, x_max_new, y_min_old=None, y_max_old=None, y_min_new=None,
+                       y_max_new=None):
+    if y_min_old is None:
+        y_min_old = x_min_old
+    if y_max_old is None:
+        y_max_old = x_max_old
+    if y_min_new is None:
+        y_min_new = x_min_new
+    if y_max_new is None:
+        y_max_new = x_max_new
+    x_shape = X.shape
+    splite = x_shape[0]
+    x_flatt = X.flatten("F")
+    x_flatt[:splite] = normalize_array(x_flatt[:splite], x_min_old, x_max_old, x_min_new, x_max_new)
+    x_flatt[splite:] = normalize_array(x_flatt[splite:], y_min_old, y_max_old, y_min_new, y_max_new)
+    return np.reshape(x_flatt, x_shape, order="F")
+
+
+def get_gaussian(x_min, x_max, y_min, y_max, mean=None, cov=None, size=500000):
     """
     returns a gaussian-distribution
 
+    :param cov:
+    :param mean:
     :param x_min:
     :param x_max:
     :param y_min:
     :param y_max:
-    :param mu_x:
-    :param variance_x:
-    :param mu_y:
-    :param variance_y:
     :param size:
     :return:
     """
-    xlist = np.linspace(x_min, x_max, size)
-    ylist = np.linspace(y_min, y_max, size)
-    X, Y = np.meshgrid(xlist, ylist)
-    pos = np.empty(X.shape + (2,))
-    pos[:, :, 0] = X
-    pos[:, :, 1] = Y
-    Z = multivariate_normal([mu_x, mu_y], [[variance_x, 0], [0, variance_y]])
-    return X, Y, Z.pdf(pos)
+    if mean is None:
+        mean = [0, 0]
+    if cov is None:
+        cov = [[0, 0], [0, 0]]
+    x_list = np.linspace(x_min, x_max, size)
+    y_list = np.linspace(y_min, y_max, size)
+    x, y = np.meshgrid(x_list, y_list)
+    pos = np.empty(x.shape + (2,))
+    pos[:, :, 0] = x
+    pos[:, :, 1] = y
+    z = multivariate_normal(mean, cov)
+    return x, y, z.pdf(pos)
 
 
-def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, size, scale_factor=1):
+def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, size, scale_factor=1.):
     """
     generates a random gaussian inbetween the given min and max values
     :param x_min: minimal x-value for the x-expectation
@@ -45,13 +93,19 @@ def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, 
     """
     mu_x_1 = random.randint(int(x_min * scale_factor), int(x_max * scale_factor))
     mu_y_1 = random.randint(int(y_min * scale_factor), int(y_max * scale_factor))
-    mu_variance_x_1 = random.randint(variance_min, variance_max)
-    mu_variance_y_1 = random.randint(variance_min, variance_max)
-    return get_gaussian(x_min, x_max, y_min, y_max, *(mu_x_1, mu_variance_x_1, mu_y_1, mu_variance_y_1), size)
+    cov = np.matrix([[random.randint(variance_min, variance_max), random.randint(variance_min, variance_max)],
+                     [random.randint(variance_min, variance_max), random.randint(variance_min, variance_max)]])
+    cov = np.dot(cov, cov.transpose())
+    return get_gaussian(x_min, x_max, y_min, y_max, [mu_x_1, mu_y_1], cov, size)
 
 
 def generate_gaussians(gaussians):
     return [get_gaussian(*gaussian)[2] for gaussian in gaussians]
+
+
+def generate_random_gaussians(num = 2, x_min=-10, x_max=10, y_min=-10, y_max=10, variance_min=2, variance_max=10, size=200,
+                              scale_factor=0.6):
+    return [get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, size, scale_factor)[2] for _ in range(num)]
 
 
 def generate_weights(z_values):
@@ -84,6 +138,12 @@ def find_index(number, levels, verbose=False):
     """
     start = 0
     end = len(levels) - 1
+    if verbose:
+        print("Number: {}".format(number))
+        print("Level: ", end=" ")
+        for i in levels:
+            print(i, end=", ")
+        print("")
     if number < levels[start]:
         return 0
     if number > levels[end]:
@@ -94,7 +154,7 @@ def find_index(number, levels, verbose=False):
             print("{}:{}:{}".format(start, pivo, end))
         if number < levels[pivo]:
             end = pivo
-        if number > levels[pivo]:
+        else:
             start = pivo
         pivo = int((end - start) / 2 + start)
     return pivo + 1

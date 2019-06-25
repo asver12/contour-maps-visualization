@@ -128,8 +128,31 @@ grey_color_scheme = [[1.0, 1.0, 1.0],
                      [0.1450980392156863, 0.1450980392156863, 0.1450980392156863],
                      [0.0, 0.0, 0.0]]
 
-_colorschemes = {"blue": blue_color_scheme, "green": green_color_scheme, "orange": orange_color_scheme,
-                "purple": purple_color_scheme, "red": red_color_scheme, "grey": grey_color_scheme}
+_colorschemes = {"blue": blue_color_scheme, "orange": orange_color_scheme, "green": green_color_scheme,
+                 "purple": purple_color_scheme, "red": red_color_scheme, "grey": grey_color_scheme}
+brewer_colorscheme_names = list(_colorschemes.keys())[:-1]
+
+_colorscheme = "colorscheme"
+_colorscheme_name = "colorscheme_name"
+
+
+def get_colorbrewer_schemes():
+    """
+    returns all available colorpaletts from brewer
+    :return: [{colorscheme: colorscheme_1, "colorscheme_name": colorscheme_name_1}, ... , {colorscheme: colorscheme_n, colorscheme_name: colorscheme_name_n}]
+    """
+    return [{_colorscheme: create_color_brewer_colorscheme, _colorscheme_name: colorscheme_name} for colorscheme_name
+            in
+            brewer_colorscheme_names]
+
+
+def get_background_colorbrewer_scheme():
+    """
+    returns a grey colorpalett from brewer
+    :return: {colorscheme: create_color_brewer_colorscheme, colorscheme_name: grey}
+    """
+    return {_colorscheme: create_color_brewer_colorscheme, _colorscheme_name: "grey"}
+
 
 def get_main_color(colorscheme):
     """
@@ -137,7 +160,7 @@ def get_main_color(colorscheme):
     :param colorscheme: {colorscheme:colorscheme , colorscheme_name:colorscheme_name}brewer-colorscheme to output
     :return: [rgb_1, ... rgb_12]
     """
-    return _colorschemes[colorscheme["colorscheme_name"]]
+    return _colorschemes[colorscheme[_colorscheme_name]]
 
 
 def _interpolate(color_array, start, end, position):
@@ -166,6 +189,10 @@ def create_color_brewer_colorscheme(colorscheme_name, levels, lvl_white=1, verbo
     :param verbose: outputs additional information
     :return:
     """
+    if min(levels) < 0 or min(levels) == max(levels):
+        raise ValueError("Minimum of levels is suppost to be in the intervall [0 <= x < Maximum]. Found {}".format(min(levels)))
+    if max(levels) > 1.:
+        raise ValueError("Maximum of levels is suppost to be in the intervall [Minimum of levels < x <= 1]. Found {}".format(max(levels)))
     _colorscheme = _colorschemes.get(colorscheme_name, blue_color_scheme)
     colors = []
     num_of_colors = len(_colorscheme) - 1
@@ -186,25 +213,6 @@ def create_color_brewer_colorscheme(colorscheme_name, levels, lvl_white=1, verbo
     return colors
 
 
-def get_colorbrewer_schemes():
-    """
-    returns all available colorpaletts from brewer
-    :return: [{colorscheme: colorscheme_1, "colorscheme_name": colorscheme_name_1}, ... , {colorscheme: colorscheme_n, colorscheme_name: colorscheme_name_n}]
-    """
-    colorscheme_names = ["blue", "orange", "green", "red", "purple"]
-    return [{"colorscheme": create_color_brewer_colorscheme, "colorscheme_name": colorscheme_name} for colorscheme_name
-            in
-            colorscheme_names]
-
-
-def get_background_colorbrewer_scheme():
-    """
-    returns a grey colorpalett from brewer
-    :return: {colorscheme: create_color_brewer_colorscheme, colorscheme_name: grey}
-    """
-    return {"colorscheme": create_color_brewer_colorscheme, "colorscheme_name": "grey"}
-
-
 def create_hsl_colorscheme(startcolor, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):
     """
 
@@ -216,22 +224,15 @@ def create_hsl_colorscheme(startcolor, levels, min_value=0, max_value=1, lvl_whi
     :param verbose:
     :return:
     """
-    # 234 65 29
-    # 232 57 36
-    # 231 53 40
-    # 231 50 44
-    # 230 48 47
-    # 231 44 55
-    # 230 44 63
     _check_constrains(min_value, max_value)
     rgb = __convert_startcolor(startcolor)
-    norm_levels = np.linspace(min_value, max_value, len(levels) + 1)
+    norm_levels = np.linspace(min_value, max_value, len(levels))
     if verbose:
         print("Min: {} | Max: {}".format(min_value, max_value))
     hsv = color.rgb2hsv(rgb)
     color_scheme = [color.hsv2rgb([[[float(hsv[0][0][0]), float(i), float(1 - i)]]]) for i in norm_levels]
     color_scheme = [np.array([i[0][0][0], i[0][0][1], i[0][0][2], 1.]) for i in color_scheme]
-    for i in range(lvl_white + 1 if lvl_white < len(levels) else len(levels) + 1):
+    for i in range(lvl_white + 1 if lvl_white < len(levels) else len(levels)):
         color_scheme[i] = np.array([1., 1., 1., 1.])
     if verbose:
         print(color_scheme)
@@ -259,7 +260,7 @@ def matplotlib_colorschemes(colorscheme_name, levels, lvl_white=1, verbose=False
     if verbose:
         print("colorscheme: {} | levels: {} |level white: {}".format(colorscheme_name, levels, lvl_white))
     color_scheme = [i for i in
-                    plt.cm.get_cmap(colorscheme_name)(np.linspace(0, 1, len(levels) + 1))]
+                    plt.cm.get_cmap(colorscheme_name)(np.linspace(0, 1, len(levels)))]
     for i in range(lvl_white + 1):
         color_scheme[i] = np.array([1., 1., 1., 1.])
     if verbose:
