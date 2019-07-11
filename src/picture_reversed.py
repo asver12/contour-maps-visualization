@@ -3,9 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 
-from src import picture_worker, helper, color_schemes
-from src.picture_worker import generate_contour_lines
-
+from src import color_schemes, picture_worker
 
 def plot_images(images, gaussians, z_lists, colors=None, contour_lines_method="equal_density", contour_lines=True,
                 contour_lines_weighted=True, num_of_levels=6,
@@ -89,7 +87,7 @@ def plot_image(axis, image, gaussians, z_lists, colors=None, contour_lines_metho
     extent = gaussians[0][:4]
     axis.imshow(image, extent=extent, origin='lower')
     for z_sum, contour_lines_colorscheme in zip(z_lists, colors):
-        generate_contour_lines(axis, z_sum, gaussians[0], contour_lines_colorscheme,
+        picture_worker.generate_contour_lines(axis, z_sum, gaussians[0], contour_lines_colorscheme,
                                contour_lines_method,
                                contour_lines_weighted, num_of_levels, borders, linewidth)
     if isinstance(axis, type(plt)):

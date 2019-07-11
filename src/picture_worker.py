@@ -5,6 +5,9 @@ from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from skimage import color, measure
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 from src import color_operations, hierarchic_blending_operator, helper, c_picture_worker, color_schemes
 
@@ -52,7 +55,7 @@ def get_iso_levels(X, method="equal_density", num_of_levels=8):
 
 
 def get_colorgrid(X, colorscheme, method="equal_density", num_of_levels=8, min_value=0., max_value=1., split=True,
-                  verbose=False, *args,
+                  *args,
                   **kwargs):
     """
     Takes a 2D-Grid and maps it to a color-scheme. Therefor it generates a colormap with the given number of levels
@@ -64,21 +67,20 @@ def get_colorgrid(X, colorscheme, method="equal_density", num_of_levels=8, min_v
     :return: 2D-Grid with color values from the color-scheme
     """
     _check_constrains(min_value, max_value)
-    if verbose:
-        print("Min: {} | Max: {}".format(min_value, max_value))
+    logger.debug("Min: {} | Max: {}".format(min_value, max_value))
 
     # generate colors to chose from
-    norm_levels = get_iso_levels(X, method=method, num_of_levels=num_of_levels + 2)
-    norm_levels = _norm_levels(norm_levels, min_value, max_value)
-    norm_levels = [(i + j) / 2 for i, j in zip(norm_levels[:-1], norm_levels[1:])]
-    colormap = colorscheme(levels=norm_levels, verbose=verbose, *args, **kwargs)
+    norm = get_iso_levels(X, method=method, num_of_levels=num_of_levels + 2)
+    norm = norm_levels(norm, min_value, max_value)
+    norm = [(i + j) / 2 for i, j in zip(norm[:-1], norm[1:])]
+    colormap = colorscheme(levels=norm, *args, **kwargs)
 
     # replace points in image with matching colors
     levels = get_iso_levels(X, method=method, num_of_levels=num_of_levels)
-    return color_operations.map_colors(X, colormap, levels, split, verbose=verbose)
+    return color_operations.map_colors(X, colormap, levels, split)
 
 
-def _norm_levels(levels, new_min_value=0., new_max_value=1.):
+def norm_levels(levels, new_min_value=0., new_max_value=1.):
     if levels.size != 0:
         return np.interp(levels, (levels.min(), levels.max()), (new_min_value, new_max_value))
     else:
@@ -98,62 +100,53 @@ def get_colors(colorscheme, levels, *args, **kwargs):
     return colorscheme(levels=levels, *args, **kwargs)
 
 
-def _convert_rgb_image(img, color_space, verbose=False):
+def _convert_rgb_image(img, color_space):
     """
     converts rgb-image into a given color-space. If the rgb-image is in rgba its converted to rgb.
 
     :param img: 2D-image with rgba or rgb values
     :param color_space: "lab" or "hsv"
-    :param verbose: outputs additional information
     :return: 2D-image in given color-space if no color-space is given in rgb
     """
     if img.shape[-1] == 4:
         img = color.rgba2rgb(img)
     if color_space == "lab":
         img = color.rgb2lab(img)
-        if verbose:
-            print("Lab-Color is used")
+        logger.debug("Lab-Color is used")
     elif color_space == "hsv":
         img = color.rgb2hsv(img)
-        if verbose:
-            print("Hsv-Color is used")
+        logger.debug("Hsv-Color is used")
     else:
-        if verbose:
-            print("RGB-Color is used")
+        logger.debug("RGB-Color is used")
     return img
 
 
-def _convert_color_space_to_rgb(img, color_space, verbose=False):
+def _convert_color_space_to_rgb(img, color_space):
     """
     converts image of given color-space into a rgb-image.
 
     :param img: 2D-image in given color-space
     :param color_space: "lab" or "hsv"
-    :param verbose: outputs additional information
     :return: 2D-image in rgb if no color-space is given in rgb
     """
     if color_space == "lab":
         img = color.lab2rgb(img)
-        if verbose:
-            print("Lab-Color is used")
+        logger.debug("Lab-Color is used")
     elif color_space == "hsv":
         img = color.hsv2rgb(img)
-        if verbose:
-            print("Hsv-Color is used")
+        logger.debug("Hsv-Color is used")
     else:
-        if verbose:
-            print("Nothing was converted")
+        logger.debug("Nothing was converted")
     return img
 
 
-def get_image_list(gaussians, colorschemes, borders=None, verbose=False):
+def get_image_list(gaussians, colorschemes, borders=None):
     """
 
     :param gaussians: [gaussian_1, ... , gaussian_n]
     :param colorschemes: [{colorscheme: color_scheme_function_1, colorscheme_name: colorscheme_name_1},
                             ... ]{colorscheme: color_scheme_function_n, colorscheme_name: colorscheme_name_n}]
     :param borders: range in which the pixel of the pictures are normalizes
-    :param verbose: outputs additional information
     :return: Imagelist [2D-image_1, ... ,2D-image_n], Weights [2D-weight_1, ... ,2D-weight_n], Sum of all weights 2D-weight
     """
     if borders is None:
@@ -166,8 +159,7 @@ def get_image_list(gaussians, colorschemes, borders=None, verbose=False):
     for z, colorscheme in zip(z_list, colorschemes):
         z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
         z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
-        img, _ = get_colorgrid(z, **colorscheme, min_value=z_min_weight, max_value=z_max_weight, split=True,
-                               verbose=verbose)
+        img, _ = get_colorgrid(z, **colorscheme, min_value=z_min_weight, max_value=z_max_weight, split=True)
         img_list.append(img)
     return img_list, z_list, z_sum
 
@@ -176,7 +168,7 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
                    method="equal_density",
                    color_space="lab",
                    use_c_implementation=False,
-                   borders=None, verbose=False):
+                   borders=None):
     """
     Generates an image from a list of gaussians and a colorscheme for each
 
@@ -186,15 +178,13 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
     :param blending_operator: default is hierarchic-porter-duff-source-over
     :param use_c_implementation: if true the c-implementation is used which is approc. 3-4 times faster but only works with hierarchic-porter-duff-source-over rgb and lab
     :param borders: range in which the pixel of the pictures are normalizes
-    :param verbose: outputs additional information
     :return: Weights [2D-weight_1, ... ,2D-weight_n], 2D-image, Sum of all weights 2D-weight
     """
     if borders is None:
         borders = [0, 1]
     if len(gaussians) == 1:
         z_list = helper.generate_gaussians(gaussians)
-        img, _ = get_colorgrid(z_list[0], **colorschemes[0], split=True,
-                               verbose=verbose)
+        img, _ = get_colorgrid(z_list[0], **colorschemes[0], split=True)
         return z_list, img, z_list[0]
     z_list = helper.generate_gaussians(gaussians)
     z_min, z_max, z_sum = helper.generate_weights(z_list)
@@ -205,11 +195,10 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
         z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
         z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
         img, _ = get_colorgrid(z, **colorscheme, method=method, min_value=z_min_weight, max_value=z_max_weight,
-                               split=True,
-                               verbose=verbose)
+                               split=True)
         img_list.append(img)
     image, alpha = combine_multiple_images_hierarchic(blending_operator, img_list, z_list, color_space=color_space,
-                                                      use_c_implementation=use_c_implementation, verbose=verbose)
+                                                      use_c_implementation=use_c_implementation)
     return z_list, image, z_sum
 
 
@@ -233,7 +222,7 @@ def plot_images(images, gaussians, z_sums, colors=None, contour_lines_method="eq
     :return:
     """
 
-    print("{}".format(["mu_x", "variance_x", "mu_y", "variance_y"]))
+    logger.debug("{}".format(["mu_x", "variance_x", "mu_y", "variance_y"]))
     if len(images) == 1:
         title_j = ""
         if title == "" and gaussians:
@@ -335,20 +324,13 @@ def generate_contour_lines(ax, X, gaussian, contour_lines_colorscheme, contour_l
     if contour_lines_weighted:
         contour_lines_colors = contour_lines_colorscheme["colorscheme"](
             contour_lines_colorscheme["colorscheme_name"],
-            _norm_levels(levels, *borders), lvl_white=0)
+            norm_levels(levels, *borders), lvl_white=0)
     else:
 
         contour_lines_colors = np.repeat(
             contour_lines_colorscheme["colorscheme"](contour_lines_colorscheme["colorscheme_name"],
                                                      [1.], lvl_white=0), num_of_levels + 1, axis=0)
     plot_contour_lines(ax, X, gaussian, levels, contour_lines_colors, linewidth=linewidth)
-    # contours = find_contour_lines(X, levels)
-    # for i, color in zip(contours[:num_of_levels], contour_lines_colors[:num_of_levels]):
-    #     for contour in i:
-    #         contour = helper.normalize_2d_array(np.asarray(contour), 0, X.shape[0], *gaussian[:2], 0, X.shape[1],
-    #                                             *gaussian[2:4])
-    #
-    #         ax.plot(contour[:, 1], contour[:, 0], linewidth=linewidth, color=color)
 
 
 def plot_contour_lines(ax, X, gaussian, levels, colors, linewidth=2):
@@ -369,17 +351,15 @@ def get_normalized_contours(X, contours, gaussian):
     return contours
 
 
-def find_contour_lines(X, levels, verbose=False):
+def find_contour_lines(X, levels):
     """
     returns num_of_levels contourlines for given weights
     :param z_value: 2D-weight
     :param num_of_levels: number of contour-lines to return
-    :param verbose: outputs additional information
     :return: [contour-lines_1, ... , contourlines_n]
     """
     # levels = get_iso_levels(X, method, num_of_levels + 1)
-    if verbose:
-        print(levels)
+    logger.debug(levels)
     contours = []
     for i in levels:
         contours.append(measure.find_contours(X, i))
@@ -387,23 +367,21 @@ def find_contour_lines(X, levels, verbose=False):
 
 
 def normalize_contour_lines(contour_lines, new_min, new_max, old_min, old_max):
-    return [_norm_levels(np.asarray(i), new_min, new_max, old_min, old_max) for i in contour_lines]
+    return [norm_levels(np.asarray(i), new_min, new_max, old_min, old_max) for i in contour_lines]
 
 
-def find_contour_lines_bruteforce(z_value, img, num_of_levels, epsilon=0.00011, verbose=False):
+def find_contour_lines_bruteforce(z_value, img, num_of_levels, epsilon=0.00011):
     """
 
     :param z_value: 2D-weight
     :param img: 2D-image
     :param num_of_levels: number of contour-lines to return
     :param epsilon: everythink closer to the result of a contour-line is concidert as contour-line
-    :param verbose: outputs additional information
     :return: 2D-image with contour-lines
     """
     x_min, x_max = np.min(z_value), np.max(z_value)
     levels = np.linspace(x_min, x_max, num_of_levels)
-    if verbose:
-        print(levels)
+    logger.debug(levels)
     for i in range(len(z_value)):
         for j in range(len(z_value[0])):
             for k in levels[1:]:
@@ -427,7 +405,7 @@ def _check_if_mixable(color_1, color_2):
     return 1
 
 
-def combine_two_images(blending_operator, image, image2, color_space="lab", verbose=False, *args, **kwargs):
+def combine_two_images(blending_operator, image, image2, color_space="lab", *args, **kwargs):
     """
     Combines two images with shape [x,y,3/4]. If the 3 dimension is in shape 4 it is expected to be in rgab and will be
     transformed into srgb with shape 3.
@@ -436,7 +414,6 @@ def combine_two_images(blending_operator, image, image2, color_space="lab", verb
     :param image: image with shape [x,y,3/4]
     :param image2: image with shape [x,y,3/4]
     :param color_space: colorspace to use atm lab and rgb are supported
-    :param verbose: show more debugging informations
     :param args: extra arguments for the blending operator
     :param kwargs: extra arguments for the blending operator
     :return: img whit shape [x,y,3] as srgb
@@ -447,21 +424,19 @@ def combine_two_images(blending_operator, image, image2, color_space="lab", verb
         raise Exception("Images need a dimension of 3")
     img = _convert_rgb_image(image, color_space)
     img2 = _convert_rgb_image(image2, color_space)
-    if verbose:
-        print(img)
-        print(image)
+    logger.debug(img)
+    logger.debug(image)
     reduce = np.zeros([len(img), len(img[0]), len(img[0][0])])
     for i in range(len(img)):
         for j in range(len(img[0])):
             # for readability
-            _normal_blending(args, blending_operator, i, image, image2, img, img2, j, kwargs, reduce, verbose)
+            _normal_blending(args, blending_operator, i, image, image2, img, img2, j, kwargs, reduce)
     reduce = _convert_color_space_to_rgb(reduce, color_space)
     return reduce
 
 
-def _normal_blending(args, blending_operator, i, image, image2, img, img2, j, kwargs, reduce, verbose):
-    if verbose:
-        print("{},{} = {}".format(i, j, img[i][j]))
+def _normal_blending(args, blending_operator, i, image, image2, img, img2, j, kwargs, reduce):
+    logger.debug("{},{} = {}".format(i, j, img[i][j]))
     switch = {
         1: color_operations.blend_color(blending_operator, img[i][j], img2[i][j],
                                         *args, **kwargs),
@@ -469,17 +444,15 @@ def _normal_blending(args, blending_operator, i, image, image2, img, img2, j, kw
         3: img[i][j]
     }
     reduce[i][j] = switch.get(_check_if_mixable(image[i][j], image2[i][j]))
-    if verbose:
-        print("{},{}: {} + {} = {}".format(i, j, img[i][j], img2[i][j], reduce[i][j]))
+    logger.debug("{},{}: {} + {} = {}".format(i, j, img[i][j], img2[i][j], reduce[i][j]))
 
 
-def combine_two_images_hierarchic(blending_operator, image, z_1, image2, z_2, color_space="lab", verbose=False, *args,
+def combine_two_images_hierarchic(blending_operator, image, z_1, image2, z_2, color_space="lab", *args,
                                   **kwargs):
     """
     Combines two images with shape [x,y,3/4]. If the 3 dimension is in shape 4 it is expected to be in rgab and will be
     transformed into srgb with shape 3.
 
-    :param verbose: show more information
     :param color_space: None, "lab" or "hsv"
     :param blending_operator: operator which is used to mix the two images point by point
     :param image: image with shape [x,y,3/4]
@@ -496,38 +469,34 @@ def combine_two_images_hierarchic(blending_operator, image, z_1, image2, z_2, co
     img2 = np.asarray(image2)
     img = _convert_rgb_image(img, color_space)
     img2 = _convert_rgb_image(img2, color_space)
-    if verbose:
-        print(image)
-        print(img)
+    logger.debug(image)
+    logger.debug(img)
     z_new = np.zeros([len(img), len(img[0]), 1])
     reduce = np.zeros([len(img), len(img[0]), len(img[0][0])])
     for i in range(len(img)):
         for j in range(len(img[0])):
             # for readability
-            _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j, kwargs, reduce, verbose, z_1,
+            _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j, kwargs, reduce, z_1,
                                  z_2, z_new)
     reduce = _convert_color_space_to_rgb(reduce, color_space)
     return reduce, z_new
 
 
-def _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j, kwargs, reduce, verbose, z_1, z_2,
+def _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j, kwargs, reduce, z_1, z_2,
                          z_new):
-    if verbose:
-        print("{},{} = {}".format(i, j, img[i][j]))
+    logger.debug("{},{} = {}".format(i, j, img[i][j]))
     switch = {
         1: blending_operator(img[i][j], z_1[i][j], img2[i][j], z_2[i][j], *args, **kwargs),
         2: (img2[i][j], z_2[i][j]),
         3: (img[i][j], z_1[i][j]),
     }
     reduce[i][j], z_new[i][j] = switch.get(_check_if_mixable(image[i][j], image2[i][j]))
-    if verbose:
-        print("{},{}: {} + {} = {} \n  max({}|{}) = {}".format(i, j, img[i][j], img2[i][j], reduce[i][j], z_1[i][j],
-                                                               z_2[i][j], z_new[i][j]))
+    logger.debug("{},{}: {} + {} = {} \n  max({}|{}) = {}".format(i, j, img[i][j], img2[i][j], reduce[i][j], z_1[i][j],
+                                                                  z_2[i][j], z_new[i][j]))
 
 
 def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space="lab",
-                                       use_c_implementation=False,
-                                       verbose=False, *args,
+                                       use_c_implementation=False, *args,
                                        **kwargs):
     """
     Merges multiple pictures into one using a given blending-operator, the specific grade of blending is weighted by
@@ -537,30 +506,27 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
     :param images: [image_1, image_2, ... , image_n]
     :param z_values: [z_values_1, z_values_2, ... , z_values_n]
     :param color_space: None, "lab" or "hsv"
-    :param verbose: show more information
     :param args:
     :param kwargs:
     :return:
     """
     images = [_convert_rgb_image(np.asarray(img), None) for img in images]
-    if verbose:
+    if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
         import time
         start = time.time()
     if use_c_implementation:
-        if verbose:
-            print("Using C-Implementation")
+        logger.debug("Using C-Implementation")
         reduce, z_new = c_picture_worker.call_hierarchic_merge(images, z_values, color_space)
-        if verbose:
+        if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
             end = time.time()
-            print("{}s elapsed".format(end - start))
+            logger.debug("{}s elapsed".format(end - start))
         return reduce, z_new
     images = [_convert_rgb_image(np.asarray(img), None) for img in images]
     if any(img.ndim != 3 for img in images):
         raise Exception("Images need a dimension of 3")
     np_images = [_convert_rgb_image(img, color_space) for img in images]
-    if verbose:
-        print(np_images)
-        print(images)
+    logger.debug(np_images)
+    logger.debug(images)
     z_new = np.zeros([len(images[0]), len(images[0][0]), 1])
     reduce = np.zeros([len(images[0]), len(images[0][0]), len(images[0][0][0])])
     for i in range(len(images[0])):
@@ -570,23 +536,22 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
             _hierarchic_blending(args, blending_operator, i, images[sorted_values[0][0]],
                                  images[sorted_values[1][0]],
                                  np_images[sorted_values[0][0]], np_images[sorted_values[1][0]],
-                                 j, kwargs, reduce, verbose,
+                                 j, kwargs, reduce,
                                  z_values[sorted_values[0][0]],
                                  z_values[sorted_values[1][0]], z_new)
             if len(images) > 2:
                 for k in range(2, len(sorted_values)):
                     # for readability
-                    if verbose:
-                        print("{},{} = {}".format(i, j, reduce[i][j]))
+                    logger.debug("{},{} = {}".format(i, j, reduce[i][j]))
                     switch = {
                         1: blending_operator(reduce[i][j], z_new[i][j], np_images[sorted_values[k][0]][i][j],
                                              z_values[sorted_values[k][0]][i][j], *args, **kwargs),
                         2: (np_images[sorted_values[k][0]][i][j], z_values[sorted_values[k][0]][i][j]),
                         3: (reduce[i][j], z_new[i][j]),
                     }
-                    if verbose:
+                    if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
                         reduce_befor = reduce[i][j].copy()
-                        print(_convert_color_space_to_rgb([[reduce[i][j]]], color_space)[0][0])
+                        logger.debug(_convert_color_space_to_rgb([[reduce[i][j]]], color_space)[0][0])
                     # Select between three cases:
                     # 1: both pixel are not white, use blending_operator
                     # 2: first pixel is white, use second
@@ -595,8 +560,8 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
                         _check_if_mixable(_convert_color_space_to_rgb([[reduce[i][j]]], color_space)[0][0],
                                           images[sorted_values[k][0]][i][j]))
 
-                    if verbose:
-                        print(
+                    if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
+                        logger.debug(
                             "{},{}: {} + {} = {} \n  max({}|{}) = {}".format(i, j, reduce_befor,
                                                                              images[sorted_values[k][0]][i][j],
                                                                              reduce[i][j],
@@ -604,7 +569,7 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
                                                                              z_values[sorted_values[k][0]][i][j],
                                                                              z_new[i][j]))
     reduce = _convert_color_space_to_rgb(reduce, color_space)
-    if verbose:
+    if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
         end = time.time()
-        print("{}s elapsed".format(end - start))
+        logger.debug("{}s elapsed".format(end - start))
     return reduce, z_new

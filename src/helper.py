@@ -103,9 +103,20 @@ def generate_gaussians(gaussians):
     return [get_gaussian(*gaussian)[2] for gaussian in gaussians]
 
 
-def generate_random_gaussians(num = 2, x_min=-10, x_max=10, y_min=-10, y_max=10, variance_min=2, variance_max=10, size=200,
+def generate_gaussians_xyz(gaussians):
+    x_list, y_list, z_list = [], [], []
+    for gaussian in gaussians:
+        x, y, z = get_gaussian(*gaussian)
+        x_list.append(x)
+        y_list.append(y)
+        z_list.append(z)
+    return x_list, y_list, z_list
+
+def generate_random_gaussians(num=2, x_min=-10, x_max=10, y_min=-10, y_max=10, variance_min=2, variance_max=10,
+                              size=200,
                               scale_factor=0.6):
-    return [get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, size, scale_factor)[2] for _ in range(num)]
+    return [get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, size, scale_factor)[2] for _ in
+            range(num)]
 
 
 def generate_weights(z_values):

@@ -1,5 +1,6 @@
 .idea
 .ipynb_checkpoints
+local_history.patch
 __pycache__
 build
 
