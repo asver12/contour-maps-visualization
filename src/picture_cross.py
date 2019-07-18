@@ -92,13 +92,14 @@ def filter_crosses(gaussian, size=3, method="equal_density", num_of_levels=5, ve
 
 
 def generate_image_lines(gaussians, colorschemes, cross_size=3, verbose=False,
-                   blending_operator=hierarchic_blending_operator.porter_duff_source_over,
-                   *args, **kwargs):
+                         blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+                         *args, **kwargs):
     print(gaussians)
     return [
         filter_crosses(gaussians[i], size=cross_size, verbose=verbose) for i
         in
         gaussians]
+
 
 def filter_cross(image, x_list, y_list, z_list, gaussian, size=3, verbose=False):
     """
@@ -124,6 +125,7 @@ def filter_cross(image, x_list, y_list, z_list, gaussian, size=3, verbose=False)
         print("Eigenvector: {} \n Eigenvalues: {}".format(eigenvectors, eigenvalues))
 
     x, y = gen_line(eigenvectors[0], eigenvalues[1], gaussian[4], x_list, y_list, z_list, verbose)
+
     for j in range(1, size):
         for i in zip(x, y):
             if i[0] < new_image.shape[0] and i[1] < new_image.shape[1]:
@@ -137,8 +139,6 @@ def filter_cross(image, x_list, y_list, z_list, gaussian, size=3, verbose=False)
     if verbose:
         print("-----------------------------------------------")
     x, y = gen_line(eigenvectors[1], eigenvalues[0], gaussian[4], x_list, y_list, z_list, verbose)
-    # new_image[x, y] = image[x, y]
-
     for j in range(1, size):
         for i in zip(x, y):
             if i[0] < new_image.shape[0] and i[1] < new_image.shape[1]:
