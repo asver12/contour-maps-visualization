@@ -51,6 +51,14 @@ def normalize_2d_array(X, x_min_old, x_max_old, x_min_new, x_max_new, y_min_old=
     return np.reshape(x_flatt, x_shape, order="F")
 
 
+class Gaussian():
+    def __init__(self, mean, cov):
+        self.gau = multivariate_normal(mean, cov)
+
+    def get(self, x, y):
+        return self.gau.pdf([x, y])
+
+
 def get_gaussian(x_min, x_max, y_min, y_max, mean=None, cov=None, size=500000):
     """
     returns a gaussian-distribution
@@ -111,6 +119,7 @@ def generate_gaussians_xyz(gaussians):
         y_list.append(y)
         z_list.append(z)
     return x_list, y_list, z_list
+
 
 def generate_random_gaussians(num=2, x_min=-10, x_max=10, y_min=-10, y_max=10, variance_min=2, variance_max=10,
                               size=200,

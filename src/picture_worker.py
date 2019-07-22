@@ -30,7 +30,7 @@ def get_picture(x_min, x_max, y_min, y_max, X, Y, Z, levels, *args, **kwargs):
     return img
 
 
-def _check_constrains(min_value, max_value):
+def check_constrains(min_value, max_value):
     if min_value < 0. or min_value > max_value:
         raise Exception("{} is not accepted as minimum value".format(min_value))
     if max_value > 1.:
@@ -54,6 +54,19 @@ def get_iso_levels(X, method="equal_density", num_of_levels=8):
     return np.linspace(np.min(X), np.max(X), num_of_levels + 2)[1:-1]
 
 
+def norm_levels(levels, new_min_value=0., new_max_value=1.):
+    levels = np.asarray(levels)
+    if levels.size != 0:
+        return np.interp(levels, (levels.min(), levels.max()), (new_min_value, new_max_value))
+    else:
+        return levels
+
+
+def get_color_middlepoint(iso_lines, min_value, max_value):
+    norm = norm_levels(iso_lines, min_value, max_value)
+    return [(i + j) / 2 for i, j in zip(norm[:-1], norm[1:])]
+
+
 def get_colorgrid(X, colorscheme, method="equal_density", num_of_levels=8, min_value=0., max_value=1., split=True,
                   *args,
                   **kwargs):
@@ -66,25 +79,17 @@ def get_colorgrid(X, colorscheme, method="equal_density", num_of_levels=8, min_v
     :param args:
     :return: 2D-Grid with color values from the color-scheme
     """
-    _check_constrains(min_value, max_value)
+    check_constrains(min_value, max_value)
     logger.debug("Min: {} | Max: {}".format(min_value, max_value))
 
     # generate colors to chose from
     norm = get_iso_levels(X, method=method, num_of_levels=num_of_levels + 2)
-    norm = norm_levels(norm, min_value, max_value)
-    norm = [(i + j) / 2 for i, j in zip(norm[:-1], norm[1:])]
+    norm = get_color_middlepoint(norm, min_value, max_value)
     colormap = colorscheme(levels=norm, *args, **kwargs)
 
     # replace points in image with matching colors
     levels = get_iso_levels(X, method=method, num_of_levels=num_of_levels)
     return color_operations.map_colors(X, colormap, levels, split)
-
-
-def norm_levels(levels, new_min_value=0., new_max_value=1.):
-    if levels.size != 0:
-        return np.interp(levels, (levels.min(), levels.max()), (new_min_value, new_max_value))
-    else:
-        return levels
 
 
 def get_colors(colorscheme, levels, *args, **kwargs):
