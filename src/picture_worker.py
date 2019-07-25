@@ -54,10 +54,13 @@ def get_iso_levels(X, method="equal_density", num_of_levels=8):
     return np.linspace(np.min(X), np.max(X), num_of_levels + 2)[1:-1]
 
 
-def norm_levels(levels, new_min_value=0., new_max_value=1.):
+def norm_levels(levels, new_min_value=0., new_max_value=1., old_min=None, old_max=None):
     levels = np.asarray(levels)
     if levels.size != 0:
-        return np.interp(levels, (levels.min(), levels.max()), (new_min_value, new_max_value))
+        if old_min == None or old_max == None:
+            return np.interp(levels, (levels.min(), levels.max()), (new_min_value, new_max_value))
+        else:
+            return np.interp(levels, (old_min, old_max), (new_min_value, new_max_value))
     else:
         return levels
 
@@ -103,6 +106,16 @@ def get_colors(colorscheme, levels, *args, **kwargs):
     :return: list of size num_of_levels with colors
     """
     return colorscheme(levels=levels, *args, **kwargs)
+
+
+def convert_color_to_colorspace(color, color_space = "lab"):
+    wow = _convert_rgb_image(np.array([[color]]), color_space)[0][0]
+    return wow
+
+
+def convert_color_to_rgb(color, color_space = "lab"):
+    wow = _convert_color_space_to_rgb(np.array([[color]]), color_space)[0][0]
+    return wow
 
 
 def _convert_rgb_image(img, color_space):

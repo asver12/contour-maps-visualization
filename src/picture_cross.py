@@ -2,27 +2,23 @@ import math
 import numpy as np
 
 from matplotlib import pyplot as plt
+from matplotlib.patches import Polygon
 import scipy.ndimage
-from itertools import combinations
-
-from shapely import geometry
-
+import itertools
+import collections
 import pyclipper
 
-from matplotlib.patches import Polygon
-from src import helper, picture_worker, color_schemes, color_operations, color_blending_operator, \
-    hierarchic_blending_operator
+from src import helper, picture_worker, color_schemes, hierarchic_blending_operator
 
 import logging
-
-from src.picture_worker import get_iso_levels
 
 logger = logging.getLogger(__name__)
 
 
-def plot_images(cross_lines, gaussians, z_sums, colors=None, contour_lines_method="equal_density", contour_lines=True,
+def plot_images(cross_lines, gaussians, z_sums, colors=None, color_space="lab", contour_lines_method="equal_density",
+                contour_lines=True,
                 contour_lines_weighted=True, num_of_levels=8,
-                title="", with_axis=True, borders=None, linewidth_contour=2, linewidth_cross=2, columns=5,
+                title="", with_axis=True, borders=None, linewidth_contour=2, linewidth_cross=0.5, columns=5,
                 bottom=0.0,
                 left=0., right=2.,
                 top=2.):
@@ -34,7 +30,7 @@ def plot_images(cross_lines, gaussians, z_sums, colors=None, contour_lines_metho
         elif len(title) > columns:
             title_j = title[columns]
         color_legend = colors if colors else []
-        plot_image(plt, cross_lines[0], gaussians[0], z_sums[0], color_legend, contour_lines_method,
+        plot_image(plt, cross_lines[0], gaussians[0], z_sums[0], color_legend, color_space, contour_lines_method,
                    contour_lines_weighted,
                    title_j, with_axis, num_of_levels, borders, linewidth_contour, linewidth_cross)
         plt.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
@@ -49,7 +45,7 @@ def plot_images(cross_lines, gaussians, z_sums, colors=None, contour_lines_metho
                     title_j = '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[i * columns])
                 elif len(title) > i * columns:
                     title_j = title[i * columns]
-                plot_image(axes, subplot[0], gaussians[i * columns], sub_sums[0], colors,
+                plot_image(axes, subplot[0], gaussians[i * columns], sub_sums[0], colors, color_space,
                            contour_lines_method,
                            contour_lines_weighted,
                            title_j,
@@ -64,7 +60,7 @@ def plot_images(cross_lines, gaussians, z_sums, colors=None, contour_lines_metho
                         title_j = '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[j + i * columns])
                     elif len(title) > j + i * columns:
                         title_j = title[j + i * columns]
-                    plot_image(axes[j], subplot[j], gaussians[j + i * columns], sub_sums[j], colors,
+                    plot_image(axes[j], subplot[j], gaussians[j + i * columns], sub_sums[j], colors, color_space,
                                contour_lines_method,
                                contour_lines_weighted,
                                title_j,
@@ -79,7 +75,7 @@ def plot_images(cross_lines, gaussians, z_sums, colors=None, contour_lines_metho
             fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
 
 
-def plot_image(axis, cross_lines, gaussians, z_sum, colors,
+def plot_image(axis, cross_lines, gaussians, z_sum, colors, color_space="lab",
                contour_lines_method="equal_density",
                contour_lines_weighted=True, title="", with_axis=True,
                num_of_levels=6, borders=None, linewidth=2,
@@ -87,70 +83,106 @@ def plot_image(axis, cross_lines, gaussians, z_sum, colors,
     logger.debug("gaussians: {}".format(gaussians))
     for cross in cross_lines:
         generate_cross(axis, *cross[:4])
-    fill_between_lines(axis, cross_lines)
+    fill_between_lines(axis, cross_lines, color_space=color_space)
     picture_worker.generate_contour_lines(axis, z_sum, gaussians[0], contour_lines_colorscheme,
                                           contour_lines_method,
                                           contour_lines_weighted, num_of_levels, borders, linewidth)
 
 
-def filter_list(list_1, list_2):
-    for i in list_2:
-        if i not in list_1:
-            list_1.append(i)
-    return list_1
+def filter_order_list(list_1, idx):
+    return [list_1[i] for i in idx]
+    # return list(collections.OrderedDict.fromkeys(list_1))
 
 
-def filter_color(list_1, list_2):
-    for i in list_2:
-        for j in list_1:
-            if all(k in j for k in i):
+def filter_order_color(list_1):
+    new_list = []
+    idx = []
+    for i, lst in enumerate(list_1):
+        for j in new_list:
+            if all(k in j for k in lst):
                 break
         else:
-            list_1.append(i)
-    return list_1
+            new_list.append(lst)
+            idx.append(i)
+    return idx, new_list
 
 
-def get_fill_regions(cross_lines):
+def convert_to_int(point, scale=10 ** 5):
+    return int(point[0] * scale), int(point[1] * scale)
+
+
+def convert_to_float(point, scale=10 ** 5):
+    return point[0] / scale, point[1] / scale
+
+
+def get_intersection(polys):
+    pc = pyclipper.Pyclipper()
+    # PT_SUBJECT
+    # PT_CLIP
+    for poly in polys[:-1]:
+        pc.AddPath(poly, pyclipper.PT_SUBJECT, True)
+    pc.AddPath(polys[-1], pyclipper.PT_CLIP, True)
+    return pc.Execute(pyclipper.CT_INTERSECTION, pyclipper.PFT_NONZERO, pyclipper.PFT_NONZERO)
+
+
+def generate_polygons(rectangle_1, colors, z_weights):
+    for first_point, second_point, color, z_weight in zip(rectangle_1[:-1], rectangle_1[1:], colors, z_weights):
+        poly = (convert_to_int(first_point[0]), convert_to_int(second_point[0]), convert_to_int(second_point[1]),
+                convert_to_int(first_point[1]))
+        yield poly, color, z_weight
+
+
+def generate_polys(cross_lines):
     crosses = []
-    for line_1, line_2, colors_1, colors_2, z_weights_1, z_weights_2 in cross_lines:
+    for rectangle_1, rectangle_2, colors_1, colors_2, z_weights_1, z_weights_2 in cross_lines:
         poly_cross = []
-        for first_point, second_point, color, z_weight in zip(line_1[:-1], line_1[1:], colors_1, z_weights_1):
-            logger.debug(first_point)
-            point_1 = geometry.Point(*first_point[0])
-            point_2 = geometry.Point(*first_point[1])
-            point_3 = geometry.Point(*second_point[0])
-            point_4 = geometry.Point(*second_point[1])
-            poly = geometry.Polygon([[p.x, p.y] for p in [point_1, point_3, point_4, point_2]])
-            poly_cross.append((poly, color, z_weight))
-        for first_point, second_point, color, z_weight in zip(line_2[:-1], line_2[1:], colors_2, z_weights_2):
-            logger.debug(first_point)
-            point_1 = geometry.Point(*first_point[0])
-            point_2 = geometry.Point(*first_point[1])
-            point_3 = geometry.Point(*second_point[0])
-            point_4 = geometry.Point(*second_point[1])
-            poly = geometry.Polygon([[p.x, p.y] for p in [point_1, point_3, point_4, point_2]])
-            poly_cross.append((poly, color, z_weight))
+        for i in generate_polygons(rectangle_1, colors_1, z_weights_1):
+            poly_cross.append(i)
+        for i in generate_polygons(rectangle_2, colors_2, z_weights_2):
+            poly_cross.append(i)
         crosses.append(poly_cross)
+    return crosses
+
+
+def get_fill_regions(cross_lines, int_condition=1000):
+    # create rectangles
+    crosses = generate_polys(cross_lines)
+
+    # find all intersections of 2 polygons
     poly_return = []
-    for cross_1, cross_2 in combinations(crosses, 2):
+    for cross_1, cross_2 in itertools.combinations(crosses, 2):
         for a in cross_1:
             for b in cross_2:
-                inter = a[0].intersection(b[0])
-                if inter.geom_type == "Polygon":
-                    poly_return.append([inter, [a[1], b[1]], [a[2], b[2]]])
+                try:
+                    solution = get_intersection([a[0], b[0]])
+                    if solution:
+                        poly_return.append([solution[0], [a[1], b[1]], [a[2], b[2]]])
+                except:
+                    pass
 
+    # find all intersections of the intersections from 2 polygons
     new_polys = poly_return
-    for i in range(len(crosses) - 1):
+    i = 0
+    next_polys = []
+    while len(new_polys) > 2 and i < len(crosses) + 1 and len(next_polys) < int_condition:
+        logger.debug("Iteration[{}]: {}".format(len(crosses), i))
+        logger.debug("Polys: {}".format(len(new_polys)))
         next_polys = []
-        for a, b in combinations(new_polys, 2):
-            inter = a[0].intersection(b[0])
-            if inter.geom_type == "Polygon":
-                new_colors = filter_color(a[1], b[1])
-                new_weights = filter_list(a[2], b[2])
-                next_polys.append([inter, new_colors, new_weights])
-        for i in next_polys:
-            poly_return.append(i)
+        com_polys = []
+        for a, b in itertools.combinations(new_polys, 2):
+            if a[0] != b[0]:
+                try:
+                    solution = get_intersection([a[0], b[0]])
+                    if solution and solution not in com_polys:
+                        next_polys.append([solution[0], [*a[1], *b[1]], [*a[2], *b[2]]])
+                        com_polys.append(solution)
+                        poly_return.append([solution[0], [*a[1], *b[1]], [*a[2], *b[2]]])
+                except:
+                    pass
+        logger.debug("New Polys: {}".format(len(next_polys)))
+        logger.debug("Total Polys: {}".format(len(poly_return)))
         new_polys = next_polys
+        i += 1
 
     # wichtig für Masterarbeit als Bild um Aufbau zu erklären
     # fig, axes = plt.subplots(1, 1, sharex='col', sharey='row')
@@ -160,23 +192,28 @@ def get_fill_regions(cross_lines):
     return poly_return
 
 
-def mix_colors(colors, z_weights):
-    color = colors[0]
-    z_weight = z_weights[0]
-    for col, z_wei in zip(colors[1:], z_weights[1:]):
+def mix_colors(colors, z_weights, color_space="lab"):
+    color = picture_worker.convert_color_to_colorspace(colors[0], color_space)
+    z_weights = sorted(list(zip(z_weights, colors)), key=lambda x: x[0])
+    z_weight = z_weights[0][0]
+    for z_wei, col in z_weights:
+        col = picture_worker.convert_color_to_colorspace(col, color_space)
         color, z_weight = hierarchic_blending_operator.porter_duff_source_over(color, z_weight, col, z_wei)
-    return color
+    return picture_worker.convert_color_to_rgb(color, color_space)
 
 
-def fill_between_lines(axis, cross_lines):
+def fill_between_lines(axis, cross_lines, color_space="lab"):
     filled_regions = get_fill_regions(cross_lines)
     for region in filled_regions:
-        if region[0].geom_type == "Polygon":
-            color = mix_colors(region[1], region[2])
-            # axis.fill(*region[0].exterior.xy, color=color, zorder=10)
-            x,y = region[0].exterior.xy
-            axis.add_patch(Polygon(list(zip(x,y)), closed=True,
-                                   fill=True, edgecolor=color, facecolor=color))
+        idx, col = filter_order_color(region[1])
+        z_weig = filter_order_list(region[2], idx)
+        if len(region[2]) > 2:
+            logger.debug("col[{}]: {}".format(region[1], col))
+            logger.debug("z[{}]: {}".format(region[2], z_weig))
+        color = mix_colors(col, z_weig, color_space)
+        axis.add_patch(Polygon([convert_to_float(point) for point in region[0]], closed=True,
+                               fill=True, edgecolor=color, facecolor=color, aa=True, linewidth=0.))
+
 
 def generate_line(axis, line, color_points=None, borders=None):
     if borders is None:
@@ -191,18 +228,13 @@ def generate_line(axis, line, color_points=None, borders=None):
     for j, i in enumerate(points):
         idx = [0, 2, 3, 1]
         axis.add_patch(Polygon(np.array(i).reshape(4, 2)[idx], closed=True,
-                               fill=True, edgecolor=color_points[j], facecolor=color_points[j]))
-        # axis.plot(i[:, 0].T, i[:, 1].T, color=color_points[j],
-        #           linewidth=linewidth_cross)
+                               fill=True, edgecolor=color_points[j], facecolor=color_points[j], aa=True, linewidth=0.))
 
 
-# def get_iso_level(z_list, method="equal_density", num_of_levels=5):
-#     return picture_worker.get_iso_levels(z_list, method, num_of_levels)
-
-
-def get_half_lines(middlepoint, direction, length):
+def get_half_lines(middlepoint, direction, length, verb=True):
     startpoint = middlepoint[0] - direction[1] * length, middlepoint[1] - direction[0] * length
     endpoint = middlepoint[0] + direction[1] * length, middlepoint[1] + direction[0] * length
+
     return (startpoint, middlepoint), (middlepoint, endpoint)
 
 
@@ -213,7 +245,7 @@ def split_half_line(startpoint, endpoint, iso_level, x_list, y_list, z_list):
     index_end_x = helper.find_index(endpoint[1], x_list[0].flatten())
     index_end_y = helper.find_index(endpoint[0], y_list[:, 0].flatten())
     x, y = np.linspace(index_start_x, index_end_x, num), np.linspace(index_start_y, index_end_y, num)
-
+    
     # fehlerhaft???
     zi = scipy.ndimage.map_coordinates(z_list, np.vstack((x, y)))
 
@@ -264,7 +296,7 @@ def get_line(gaussian, x_list, y_list, z_list, eigenvalue, eigenvector, colorsch
 def generate_rectangle_from_line(line, eigenvector, length):
     new_line = []
     for i in line:
-        first_point, second_point = get_half_lines(i, eigenvector, length)
+        first_point, second_point = get_half_lines(i, eigenvector, length, verb=False)
         new_line.append((first_point[0], second_point[1]))
     return new_line
 
@@ -273,6 +305,9 @@ def get_cross(gaussian, colorscheme, min_value=0., max_value=1., length=3, *args
     picture_worker.check_constrains(min_value, max_value)
     x_list, y_list, z_list = helper.get_gaussian(*gaussian)
     eigenvalues, eigenvectors = np.linalg.eig(gaussian[5])
+    logger.debug(gaussian)
+    logger.debug(eigenvalues)
+    logger.debug(eigenvectors)
     line_1, colors_1, z_lvl_1 = get_line(gaussian, x_list, y_list, z_list, eigenvalues[0], eigenvectors[1], colorscheme,
                                          min_value, max_value,
                                          *args,
@@ -293,7 +328,7 @@ def generate_cross(axis, line_1, line_2, colors_1, colors_2):
     generate_line(axis, line_2, colors_2)
 
 
-def generate_image_lines(gaussians, colorschemes, length=3, borders=None, *args, **kwargs):
+def generate_image(gaussians, colorschemes, length=3, borders=None, *args, **kwargs):
     logger.debug(gaussians)
     if borders is None:
         borders = [0, 1]
@@ -306,7 +341,7 @@ def generate_image_lines(gaussians, colorschemes, length=3, borders=None, *args,
         z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
         z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
         z_weights.append([z_min_weight, z_max_weight])
-    return [
+    return z_list, [
         get_cross(i, j, *k, length, *args, **kwargs) for i, j, k
         in
-        zip(gaussians, colorschemes, z_weights)]
+        zip(gaussians, colorschemes, z_weights)], z_sum
