@@ -107,6 +107,15 @@ int _checkIfColor(double *A, double *B) {
   return 0;
 }
 
+bool _checkIfSingleColor(double *A) {
+  for (int k = 0; k < 3; ++k) {
+    if (std::abs(1.0 - A[k]) >= 1e-14) {
+      return true;
+    }
+  }
+  return false;
+}
+
 RGB _rgbColorspace;
 CIELab _labColorspace;
 
@@ -121,6 +130,82 @@ void _getRgb(double *lab, double *rgb) {
   _labColorspace.toXYZ(lab, _xyz.data());
   _rgbColorspace.fromXYZ(_xyz.data(), rgb);
   _rgbColorspace.clamp(rgb);
+}
+
+void mix_color(double *color_1, double *color_2, double *_cieLab,
+               double *weight, double *sum_weight, const char *colorspace) {
+  if (_checkIfSingleColor(color_2)) {
+    if (strncmp(colorspace, "lab", 3) == 0) {
+      _getCieLab(color_2, _cieLab);
+      for (int j = 0; j < 3; ++j) {
+        color_1[j] += _cieLab[j] * ((*weight) / (*sum_weight));
+      }
+    } else {
+      for (int j = 0; j < 3; ++j) {
+        color_1[j] += color_2[j] * ((*weight) / (*sum_weight));
+      }
+    }
+  }
+}
+
+void pictureMerge::mmMultSumHierarchic(int m, int n, int numberOfMatrizes,
+                                       double **matrizes, double **weights,
+                                       double *C, double *weightsC,
+                                       const char *colorspace) {
+#pragma omp parallel for
+  for (int i = 0; i < m * n; ++i) {
+    std::vector<double> _rgb(3);
+    std::vector<double> _cieLab1(3);
+    double alpha_sum = 0;
+    for (int l = 0; l < numberOfMatrizes; ++l) {
+      if (_checkIfSingleColor(&matrizes[l][i * 3])) {
+        alpha_sum += weights[l][i];
+      }
+    }
+    std::vector<double> _new_color(3);
+    bool foundColor = false;
+    int start_index = 0;
+    for (int k = 0; k < numberOfMatrizes; ++k) {
+      if (_checkIfSingleColor(&matrizes[k][i * 3])) {
+        if (strncmp(colorspace, "lab", 3) == 0) {
+          _getCieLab(&matrizes[k][i * 3], _cieLab1.data());
+          for (int j = 0; j < 3; ++j) {
+            _new_color[j] = _cieLab1[j] * (weights[k][i] / alpha_sum);
+          }
+        } else {
+          for (int j = 0; j < 3; ++j) {
+            _new_color[j] =
+                matrizes[k][i * 3 + j] * (weights[k][i] / alpha_sum);
+          }
+        }
+
+        foundColor = true;
+        start_index = k + 1;
+        break;
+      }
+    }
+    if (foundColor) {
+      for (int k = start_index; k < numberOfMatrizes; ++k) {
+        mix_color(_new_color.data(), &matrizes[k][i * 3], _cieLab1.data(),
+                  &weights[k][i], &alpha_sum, colorspace);
+      }
+      if (strncmp(colorspace, "lab", 3) == 0) {
+        _getRgb(_new_color.data(), _rgb.data());
+        for (int k = 0; k < 3; ++k) {
+          C[i * 3 + k] = _rgb[k];
+        }
+      } else {
+        for (int k = 0; k < 3; ++k) {
+          C[i * 3 + k] = _new_color[k];
+        }
+      }
+    } else {
+      for (int k = 0; k < 3; ++k) {
+        C[i * 3 + k] = matrizes[0][k];
+      }
+    }
+    weightsC[i] = 1.;
+  }
 }
 
 void pictureMerge::mmMultHierarchic(int m, int n, int numberOfMatrizes,

@@ -104,6 +104,41 @@ def call_hierarchic_merge(matrizes, weights, colorspace="lab"):
                                                                                                                  1)
 
 
+lib.mmMultSumHierarchic.argtypes = c_int, c_int, c_int, doublepp, doublepp, POINTER(c_double), POINTER(
+    c_double), POINTER(c_char)
+lib.mmMultSumHierarchic.restype = None
+
+
+def call_hierarchic_alpha_sum_merge(matrizes, weights, colorspace="lab"):
+    """
+    Combines multiple matrizes hierarchic and returns the combined image. Uses hierarchic porter-duff-source-over
+    Only works with rgb-Images atm
+
+    :param colorspace: rgb and lab supported so far
+    :param matrizes: [image_1, ... , image_n] list of images to use
+    :param weights: [weight_1, ... , weight_n] corresponding weights to images
+    :return: hierarchically build new 2D-image
+    """
+    num_of_matrizes, m, n = len(matrizes), len(matrizes[0]), len(matrizes[0][0])
+
+    new_matrix = np.zeros(matrizes[0].shape, dtype=np.float)
+    new_weight = np.zeros(weights[0].shape, dtype=np.float)
+    input_matrizes = np.array([np.ctypeslib.as_array(np.asarray(i, dtype=np.float).flatten()) for i in matrizes])
+    input_weights = np.array([np.ctypeslib.as_array(np.asarray(i, dtype=np.float).flatten()) for i in weights])
+
+    c_new_matrix_1 = create_cdll_type(new_matrix)
+    c_new_weight_1 = create_cdll_type(new_weight)
+    c_input_matrizes = (input_matrizes.__array_interface__['data'][0]
+                        + np.arange(input_matrizes.shape[0]) * input_matrizes.strides[0]).astype(np.uintp)
+    c_input_weights = (input_weights.__array_interface__['data'][0]
+                       + np.arange(input_weights.shape[0]) * input_weights.strides[0]).astype(np.uintp)
+
+    lib.mmMultSumHierarchic(m, n, num_of_matrizes, c_input_matrizes, c_input_weights, c_new_matrix_1, c_new_weight_1,
+                         colorspace.encode('utf-8'))
+    return np.ctypeslib.as_array(c_new_matrix_1).reshape(m, n, 3), np.ctypeslib.as_array(c_new_weight_1).reshape(m, n,
+                                                                                                                 1)
+
+
 if __name__ == "__main__":
     from src import color_schemes
     from src import picture_worker

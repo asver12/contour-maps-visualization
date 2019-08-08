@@ -180,7 +180,7 @@ int main(int argc, char* argv[]) {
   weights[1] = weightsB.data();
   weights[2] = weightsD.data();
   weights[3] = weightsE.data();
-
+  const char* colorspace = "rgb";
   printf(
       "------------------------------------------------------------------------"
       "\n");
@@ -188,7 +188,7 @@ int main(int argc, char* argv[]) {
       "--------------------------------------Hierarchic------------------------"
       "\n");
   start = system_clock::now();
-  const char* colorspace = "lab";
+
   pictureMerge::mmMultHierarchic(m, n, 4, matrizes.data(), weights.data(),
                                  c.data(), weightsC.data(), colorspace);
   // Ende der Zeitmessung
@@ -200,5 +200,33 @@ int main(int argc, char* argv[]) {
   printf("Weights:\n");
   printMatrix(weightsC.data(), m, n);
   printf("Hierarchic with 4 Matrizes: %f\n", elapsed_seconds);
+
+  printf(
+      "------------------------------------------------------------------------"
+      "\n");
+  printf(
+      "-------------------------------New "
+      "Try------------------------------\n");
+  // Endmatrix
+  for (vector<double>::iterator i = c.begin(); i < c.end(); ++i) {
+    *i = 0;
+  }
+  for (vector<double>::iterator i = weightsC.begin(); i < weightsC.end(); ++i) {
+    *i = 0;
+  }
+  start = system_clock::now();
+  pictureMerge::mmMultSumHierarchic(m, n, 4, matrizes.data(), weights.data(),
+                                    c.data(), weightsC.data(), colorspace);
+  // Ende der Zeitmessung
+  end = system_clock::now();
+  printf("C\n");
+  printf("Colors:\n");
+  printColorMatrix(c.data(), m, n);
+  printf("Weights:\n");
+  printMatrix(weightsC.data(), m, n);
+  printf("Hierarchic with 4 Matrizes: %f\n", elapsed_seconds);
+  printf("%f, %f, %f, %f\n", a[0], b[0], d[0], e[0]);
+  printf("%f, %f, %f, %f\n,", weightsA[0], weightsB[0], weightsD[0],
+         weightsE[0]);
   return 0;
 }
