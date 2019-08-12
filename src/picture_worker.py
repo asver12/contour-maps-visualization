@@ -108,12 +108,12 @@ def get_colors(colorscheme, levels, *args, **kwargs):
     return colorscheme(levels=levels, *args, **kwargs)
 
 
-def convert_color_to_colorspace(color, color_space = "lab"):
+def convert_color_to_colorspace(color, color_space="lab"):
     wow = _convert_rgb_image(np.array([[color]]), color_space)[0][0]
     return wow
 
 
-def convert_color_to_rgb(color, color_space = "lab"):
+def convert_color_to_rgb(color, color_space="lab"):
     wow = _convert_color_space_to_rgb(np.array([[color]]), color_space)[0][0]
     return wow
 
@@ -184,8 +184,10 @@ def get_image_list(gaussians, colorschemes, borders=None):
 
 def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blending_operator.porter_duff_source_over,
                    method="equal_density",
+                   num_of_levels=8,
                    color_space="lab",
                    use_c_implementation=False,
+                   use_alpha_sum=True,
                    borders=None):
     """
     Generates an image from a list of gaussians and a colorscheme for each
@@ -202,7 +204,7 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
         borders = [0, 1]
     if len(gaussians) == 1:
         z_list = helper.generate_gaussians(gaussians)
-        img, _ = get_colorgrid(z_list[0], **colorschemes[0], split=True)
+        img, _ = get_colorgrid(z_list[0], **colorschemes[0], num_of_levels=num_of_levels, split=True)
         return z_list, img, z_list[0]
     z_list = helper.generate_gaussians(gaussians)
     z_min, z_max, z_sum = helper.generate_weights(z_list)
@@ -212,11 +214,12 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
     for z, colorscheme in zip(z_list, colorschemes):
         z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
         z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
-        img, _ = get_colorgrid(z, **colorscheme, method=method, min_value=z_min_weight, max_value=z_max_weight,
+        img, _ = get_colorgrid(z, **colorscheme, method=method, num_of_levels=num_of_levels, min_value=z_min_weight, max_value=z_max_weight,
                                split=True)
         img_list.append(img)
     image, alpha = combine_multiple_images_hierarchic(blending_operator, img_list, z_list, color_space=color_space,
-                                                      use_c_implementation=use_c_implementation)
+                                                      use_c_implementation=use_c_implementation,
+                                                      use_alpha_sum=use_alpha_sum)
     return z_list, image, z_sum
 
 
@@ -294,7 +297,7 @@ def plot_images(images, gaussians, z_sums, colors=None, contour_lines_method="eq
 
 def plot_image(axis, image, gaussians, z_sum, colors=None, contour_lines_method="equal_density", contour_lines=True,
                contour_lines_weighted=True, title="", with_axis=True,
-               num_of_levels=8, borders=None, linewidth=2):
+               num_of_levels=8, borders=None, linewidth=2, lw=4):
     """
 
     :param axis: matplotlib axis at which the image is to plot on
@@ -325,7 +328,7 @@ def plot_image(axis, image, gaussians, z_sum, colors=None, contour_lines_method=
     else:
         axis.set_title(title)
     if colors:
-        custom_lines = [Line2D([0], [0], color=colors[i], lw=4) for i in
+        custom_lines = [Line2D([0], [0], color=colors[i], lw=lw) for i in
                         range(len(gaussians))]
         axis.legend(custom_lines, [i for i in range(len(gaussians))],
                     loc='upper left', frameon=False)
@@ -514,11 +517,12 @@ def _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j
 
 
 def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space="lab",
-                                       use_c_implementation=False, *args,
+                                       use_c_implementation=False, use_alpha_sum=True, *args,
                                        **kwargs):
     """
     Merges multiple pictures into one using a given blending-operator, the specific grade of blending is weighted by
     the z_values of each image. The pixel of each image is merged by its weight. From lowest to highest
+    :param use_alpha_sum:
     :param use_c_implementation: only works with rgb and lab at the moment
     :param blending_operator: operator which is used to mix the images point by point
     :param images: [image_1, image_2, ... , image_n]
@@ -534,7 +538,10 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
         start = time.time()
     if use_c_implementation:
         logger.debug("Using C-Implementation")
-        reduce, z_new = c_picture_worker.call_hierarchic_merge(images, z_values, color_space)
+        if use_alpha_sum:
+            reduce, z_new = c_picture_worker.call_hierarchic_alpha_sum_merge(images, z_values, color_space)
+        else:
+            reduce, z_new = c_picture_worker.call_hierarchic_merge(images, z_values, color_space)
         if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
             end = time.time()
             logger.debug("{}s elapsed".format(end - start))

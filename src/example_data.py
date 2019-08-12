@@ -1,6 +1,6 @@
 import copy
 
-from src import helper, color_schemes, picture_worker
+from src import helper, color_schemes
 
 
 def generate_gaussians(gaussians):
