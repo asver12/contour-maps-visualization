@@ -30,6 +30,7 @@ from src import picture_worker, color_schemes
 #     return X, Y, Z.pdf(pos)
 
 def normalize_array(X, old_min, old_max, new_min, new_max):
+    X = np.asarray(X)
     return (((X - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
 
 
@@ -84,7 +85,6 @@ def get_gaussian(x_min, x_max, y_min, y_max, mean=None, cov=None, size=500000):
     pos[:, :, 1] = y
     z = multivariate_normal(mean, cov)
     return x, y, z.pdf(pos)
-
 
 def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, size, scale_factor=1.):
     """
