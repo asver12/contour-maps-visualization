@@ -163,6 +163,10 @@ def get_main_color(colorscheme):
     return _colorschemes[colorscheme[_colorscheme_name]]
 
 
+def get_representiv_colors(colorschemes, position=-4):
+    return [get_main_color(i)[position] for i in colorschemes]
+
+
 def _interpolate(color_array, start, end, position):
     """
     find the exact position of a point in between two colors.
@@ -190,9 +194,12 @@ def create_color_brewer_colorscheme(colorscheme_name, levels, lvl_white=1, verbo
     :return:
     """
     if min(levels) < 0 or min(levels) == max(levels):
-        raise ValueError("Minimum of levels is suppost to be in the intervall [0 <= x < Maximum]. Found {}".format(min(levels)))
+        raise ValueError(
+            "Minimum of levels is suppost to be in the intervall [0 <= x < Maximum]. Found {}".format(min(levels)))
     if max(levels) > 1.:
-        raise ValueError("Maximum of levels is suppost to be in the intervall [Minimum of levels < x <= 1]. Found {}".format(max(levels)))
+        raise ValueError(
+            "Maximum of levels is suppost to be in the intervall [Minimum of levels < x <= 1]. Found {}".format(
+                max(levels)))
     _colorscheme = _colorschemes.get(colorscheme_name, blue_color_scheme)
     colors = []
     num_of_colors = len(_colorscheme) - 1

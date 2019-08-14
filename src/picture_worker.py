@@ -251,17 +251,20 @@ def calculate_image(gaussians, z_list, z_min, z_max, colorschemes,
                                               use_c_implementation=use_c_implementation,
                                               use_alpha_sum=use_alpha_sum)
 
+
 def input_image(ax, gaussians, z_list, z_min, z_max, colorschemes,
-                    method="equal_density",
-                    num_of_levels=8,
-                    color_space="lab",
-                    use_c_implementation=False,
-                    use_alpha_sum=True,
-                    blending_operator=hierarchic_blending_operator.porter_duff_source_over,
-                    borders=None):
-    img, alpha = calculate_image(gaussians, z_list, z_min, z_max, colorschemes, method, num_of_levels, color_space, use_c_implementation, use_alpha_sum, blending_operator, borders)
+                method="equal_density",
+                num_of_levels=8,
+                color_space="lab",
+                use_c_implementation=False,
+                use_alpha_sum=True,
+                blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+                borders=None):
+    img, alpha = calculate_image(gaussians, z_list, z_min, z_max, colorschemes, method, num_of_levels, color_space,
+                                 use_c_implementation, use_alpha_sum, blending_operator, borders)
     extent = gaussians[0][:4]
     ax.imshow(img, extent=extent, origin='lower')
+
 
 def plot_images(images, gaussians, z_sums, colors=None, contour_lines_method="equal_density", contour_lines=True,
                 contour_lines_weighted=True, num_of_levels=8,
