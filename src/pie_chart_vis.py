@@ -29,6 +29,7 @@ def draw_pie(ax, ratios, center, radius=0.02, angle=0, colors=None):
     cum_thetas = np.insert(cum_thetas, 0, 0)
     cum_thetas = [i + angle for i in cum_thetas]
     for k, theta in enumerate(zip(cum_thetas[:-1], cum_thetas[1:])):
+        # only works with axis not plt!!! #
         ax.add_artist(Wedge(center, radius, *theta, fc=colors[k]))
 
 
