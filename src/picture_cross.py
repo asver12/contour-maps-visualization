@@ -245,7 +245,7 @@ def split_half_line(startpoint, endpoint, iso_level, x_list, y_list, z_list):
     index_end_x = helper.find_index(endpoint[1], x_list[0].flatten())
     index_end_y = helper.find_index(endpoint[0], y_list[:, 0].flatten())
     x, y = np.linspace(index_start_x, index_end_x, num), np.linspace(index_start_y, index_end_y, num)
-    
+
     # fehlerhaft???
     zi = scipy.ndimage.map_coordinates(z_list, np.vstack((x, y)))
 
@@ -327,6 +327,25 @@ def generate_cross(axis, line_1, line_2, colors_1, colors_2):
     generate_line(axis, line_1, colors_1)
     generate_line(axis, line_2, colors_2)
 
+
+def genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length=3, borders=None, *args, **kwargs):
+    if borders is None:
+        borders = [0, 1]
+    lower_border = borders[0]
+    upper_border = borders[1]
+    z_weights = []
+    for z, colorscheme in zip(z_list, colorschemes):
+        z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
+        z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
+        z_weights.append([z_min_weight, z_max_weight])
+    return [get_cross(i, j, *k, length, *args, **kwargs) for i, j, k in zip(gaussians, colorschemes, z_weights)]
+
+
+def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, length=3, borders=None, color_space="lab", *args, **kwargs):
+    cross_lines = genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length, borders, *args, **kwargs)
+    for cross in cross_lines:
+        generate_cross(ax, *cross[:4])
+    fill_between_lines(ax, cross_lines, color_space=color_space)
 
 def generate_image(gaussians, colorschemes, length=3, borders=None, *args, **kwargs):
     logger.debug(gaussians)
