@@ -214,7 +214,8 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
     for z, colorscheme in zip(z_list, colorschemes):
         z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
         z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
-        img, _ = get_colorgrid(z, **colorscheme, method=method, num_of_levels=num_of_levels, min_value=z_min_weight, max_value=z_max_weight,
+        img, _ = get_colorgrid(z, **colorscheme, method=method, num_of_levels=num_of_levels, min_value=z_min_weight,
+                               max_value=z_max_weight,
                                split=True)
         img_list.append(img)
     image, alpha = combine_multiple_images_hierarchic(blending_operator, img_list, z_list, color_space=color_space,
@@ -222,6 +223,45 @@ def generate_image(gaussians, colorschemes, blending_operator=hierarchic_blendin
                                                       use_alpha_sum=use_alpha_sum)
     return z_list, image, z_sum
 
+
+def calculate_image(gaussians, z_list, z_min, z_max, colorschemes,
+                    method="equal_density",
+                    num_of_levels=8,
+                    color_space="lab",
+                    use_c_implementation=False,
+                    use_alpha_sum=True,
+                    blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+                    borders=None):
+    if borders is None:
+        borders = [0, 1]
+    if len(gaussians) == 1:
+        img, _ = get_colorgrid(z_list[0], **colorschemes[0], num_of_levels=num_of_levels, split=True)
+        return z_list, img, z_list[0]
+    img_list = []
+    lower_border = borders[0]
+    upper_border = borders[1]
+    for z, colorscheme in zip(z_list, colorschemes):
+        z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
+        z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
+        img, _ = get_colorgrid(z, **colorscheme, method=method, num_of_levels=num_of_levels, min_value=z_min_weight,
+                               max_value=z_max_weight,
+                               split=True)
+        img_list.append(img)
+    return combine_multiple_images_hierarchic(blending_operator, img_list, z_list, color_space=color_space,
+                                              use_c_implementation=use_c_implementation,
+                                              use_alpha_sum=use_alpha_sum)
+
+def input_image(ax, gaussians, z_list, z_min, z_max, colorschemes,
+                    method="equal_density",
+                    num_of_levels=8,
+                    color_space="lab",
+                    use_c_implementation=False,
+                    use_alpha_sum=True,
+                    blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+                    borders=None):
+    img, alpha = calculate_image(gaussians, z_list, z_min, z_max, colorschemes, method, num_of_levels, color_space, use_c_implementation, use_alpha_sum, blending_operator, borders)
+    extent = gaussians[0][:4]
+    ax.imshow(img, extent=extent, origin='lower')
 
 def plot_images(images, gaussians, z_sums, colors=None, contour_lines_method="equal_density", contour_lines=True,
                 contour_lines_weighted=True, num_of_levels=8,
@@ -337,15 +377,18 @@ def plot_image(axis, image, gaussians, z_sum, colors=None, contour_lines_method=
         axis.axis("off")
 
 
+def get_contour_line_colors(contour_lines_colorscheme, level, borders):
+    return contour_lines_colorscheme["colorscheme"](contour_lines_colorscheme["colorscheme_name"],
+                                                    norm_levels(level, *borders), lvl_white=0)
+
+
 def generate_contour_lines(ax, X, gaussian, contour_lines_colorscheme, contour_lines_method="equal_density",
                            contour_lines_weighted=True, num_of_levels=8, borders=None, linewidth=2):
     if borders is None:
         borders = [0.5, 1]
     levels = get_iso_levels(X, contour_lines_method, num_of_levels + 1)
     if contour_lines_weighted:
-        contour_lines_colors = contour_lines_colorscheme["colorscheme"](
-            contour_lines_colorscheme["colorscheme_name"],
-            norm_levels(levels, *borders), lvl_white=0)
+        contour_lines_colors = get_contour_line_colors(contour_lines_colorscheme, levels, borders)
     else:
 
         contour_lines_colors = np.repeat(

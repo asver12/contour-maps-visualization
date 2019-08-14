@@ -4,33 +4,18 @@ from scipy.stats import multivariate_normal
 
 from src import picture_worker, color_schemes
 
+import logging
 
-# def get_gaussian(x_min, x_max, y_min, y_max, mu_x=0.0, variance_x=0.0, mu_y=0.0, variance_y=0.0, size=500000):
-#     """
-#     returns a gaussian-distribution
-#
-#     :param x_min:
-#     :param x_max:
-#     :param y_min:
-#     :param y_max:
-#     :param mu_x:
-#     :param variance_x:
-#     :param mu_y:
-#     :param variance_y:
-#     :param size:
-#     :return:
-#     """
-#     xlist = np.linspace(x_min, x_max, size)
-#     ylist = np.linspace(y_min, y_max, size)
-#     X, Y = np.meshgrid(xlist, ylist)
-#     pos = np.empty(X.shape + (2,))
-#     pos[:, :, 0] = X
-#     pos[:, :, 1] = Y
-#     Z = multivariate_normal([mu_x, mu_y], [[variance_x, 0], [0, variance_y]])
-#     return X, Y, Z.pdf(pos)
+logger = logging.getLogger(__name__)
+
 
 def normalize_array(X, old_min, old_max, new_min, new_max):
-    return (((X - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
+    X = np.asarray(X)
+    if old_min != old_max:
+        return (X - old_min) * ((new_max - new_min) / (old_max - old_min)) + new_min
+    else:
+        logger.warning("min == max | {}=={}".format(old_min, old_max))
+        return []
 
 
 def normalize_2d_array(X, x_min_old, x_max_old, x_min_new, x_max_new, y_min_old=None, y_max_old=None, y_min_new=None,
