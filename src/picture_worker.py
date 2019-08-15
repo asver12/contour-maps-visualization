@@ -235,8 +235,9 @@ def calculate_image(gaussians, z_list, z_min, z_max, colorschemes,
     if borders is None:
         borders = [0, 1]
     if len(gaussians) == 1:
-        img, _ = get_colorgrid(z_list[0], **colorschemes[0], num_of_levels=num_of_levels, split=True)
-        return z_list, img, z_list[0]
+        img, _ = get_colorgrid(z_list[0], **colorschemes[0], num_of_levels=num_of_levels, min_value=borders[0],
+                               max_value=borders[1], split=True)
+        return img, z_list[0]
     img_list = []
     lower_border = borders[0]
     upper_border = borders[1]

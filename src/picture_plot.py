@@ -10,8 +10,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+visualizations = ["contour_lines", "contours", "pie_charts", "crosses"]
 
-def plot_images(gaussians, title="", colors="", columns=5,
+
+def plot_images(gaussians, titles="", colors="", columns=5,
                 bottom=0.0,
                 left=0., right=2.,
                 top=2.,
@@ -29,41 +31,36 @@ def plot_images(gaussians, title="", colors="", columns=5,
     logger.debug("{}".format(["mu_x", "variance_x", "mu_y", "variance_y"]))
     color_legend = colors if colors else []
     if len(gaussians) == 1:
-        title_j = ""
-        if title == "" and gaussians:
-            title_j = '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[0])
-        elif len(title) > columns:
-            title_j = title[columns]
-        fig, axis = plt.subplots(1, 1)
-        plot_image(axis, gaussians[0], title=title_j, legend_colors=color_legend, *args, **kwargs)
+        title = generate_title(titles, gaussians[0], 0)
+        fig, ax = plt.subplots(1, 1)
+        plot_image(ax, gaussians[0], title=title, legend_colors=color_legend, *args, **kwargs)
         fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
     else:
         for i in range(math.ceil(len(gaussians) / columns)):
             sub_gaussians = gaussians[i * columns:(i + 1) * columns]
             fig, ax = plt.subplots(1, len(sub_gaussians), sharex='col', sharey='row')
             if len(sub_gaussians) == 1:
-                title_j = ""
-                if title == "" and gaussians:
-                    title_j = '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[i * columns])
-                elif len(title) > i * columns:
-                    title_j = title[i * columns]
-                plot_image(ax[i * columns], gaussians[i * columns], title=title_j, legend_colors=color_legend, *args,
+                title = generate_title(titles, gaussians[i * columns], i * columns)
+                plot_image(ax[i * columns], gaussians[i * columns], title=title, legend_colors=color_legend, *args,
                            **kwargs)
             else:
                 for j in range(len(sub_gaussians)):
-                    title_j = ""
-                    if title == "" and gaussians:
-                        title_j = '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[j + i * columns])
-                    elif len(title) > j + i * columns:
-                        title_j = title[j + i * columns]
-                    plot_image(ax[j + i * columns], gaussians[j + i * columns], title=title_j,
+                    title = generate_title(titles, gaussians[j + i * columns], j + i * columns)
+                    plot_image(ax[j], sub_gaussians[j], title=title,
                                legend_colors=color_legend, *args, **kwargs)
             fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
 
 
+def generate_title(titles, gaussian, index):
+    if (len(titles) <= index or titles == "") and gaussian:
+        return '\n'.join("{}".format(gau[4:-1]) for gau in gaussian)
+    return titles[index]
+
+
 def plot_image(ax, gaussians,
                contour_lines=False, contour_line_colorscheme=color_schemes.get_background_colorbrewer_scheme(),
-               contour_lines_method="equal_density", contour_lines_weighted=True, contour_line_level=8, borders=None,
+               contour_lines_method="equal_density", contour_lines_weighted=True, contour_line_level=8,
+               contour_line_borders=None,
                linewidth=2,
                contours=False, contour_colorscheme=color_schemes.get_colorbrewer_schemes(),
                contour_method="equal_density", contour_lvl=8, color_space="lab", use_c_implementation=True,
@@ -71,7 +68,7 @@ def plot_image(ax, gaussians,
                contour_borders=None,
                crosses=False, cross_colorscheme=color_schemes.get_colorbrewer_schemes(), cross_width=3,
                cross_borders=None,
-               pie_charts=False, num_of_pies=10, angle=90, colors=None,
+               pie_charts=False, num_of_pies=10, angle=90, pie_chart_colors=None,
                legend_lw=2,
                legend_colors=None,
                title=""
@@ -86,7 +83,7 @@ def plot_image(ax, gaussians,
     :param contour_lines_method:
     :param contour_lines_weighted:
     :param contour_line_level:
-    :param borders:
+    :param contour_line_borders:
     :param linewidth:
     :param contours:
     :param contour_colorscheme:
@@ -104,12 +101,13 @@ def plot_image(ax, gaussians,
     :param pie_charts:
     :param num_of_pies:
     :param angle:
-    :param colors:
+    :param pie_chart_colors:
     :param legend_lw:
     :param legend_colors: plots colors as lines to legend if not chosen defaults to contour-colors
     :param title: title specified if not given non is plotted
     :return:
     """
+
     z_list = helper.generate_gaussians(gaussians)
     z_min, z_max, z_sum = helper.generate_weights(z_list)
 
@@ -129,19 +127,41 @@ def plot_image(ax, gaussians,
         else:
             ax.set_title(title)
     if not legend_colors:
-        legend_colors = color_schemes.get_representiv_colors(contour_colorscheme)
+        legend_colors = color_schemes.get_representiv_colors(
+            evaluate_colors([contour_line_colorscheme, contour_colorscheme, pie_chart_colors], len(gaussians)))
     custom_lines = [Line2D([0], [0], color=legend_colors[i], lw=legend_lw) for i in
                     range(len(gaussians))]
     ax.legend(custom_lines, [i for i in range(len(gaussians))],
               loc='upper left', frameon=False)
     if contours:
-        picture_worker.input_image(ax, gaussians, z_list, z_min, z_max, contour_colorscheme, contour_method,
-                                   contour_lvl, color_space, use_c_implementation, use_alpha_sum,
-                                   blending_operator=blending_operator, borders=contour_borders)
+        if isinstance(contour_colorscheme, dict):
+            picture_worker.input_image(ax, [gaussians[0]], [z_sum], np.min(z_sum), np.max(z_sum), [contour_colorscheme],
+                                       contour_method,
+                                       contour_lvl, color_space, use_c_implementation, use_alpha_sum,
+                                       blending_operator=blending_operator, borders=contour_borders)
+        else:
+            picture_worker.input_image(ax, gaussians, z_list, z_min, z_max, contour_colorscheme, contour_method,
+                                       contour_lvl, color_space, use_c_implementation, use_alpha_sum,
+                                       blending_operator=blending_operator, borders=contour_borders)
     if crosses:
         picture_cross.input_crosses(ax, gaussians, z_list, z_min, z_max, cross_colorscheme, cross_width, cross_borders)
     if contour_lines:
-        picture_worker.generate_contour_lines(ax, z_sum, gaussians[0], contour_line_colorscheme, contour_lines_method,
-                                              contour_lines_weighted, contour_line_level, borders, linewidth)
+        if isinstance(contour_line_colorscheme, dict):
+            picture_worker.generate_contour_lines(ax, z_sum, gaussians[0], contour_line_colorscheme,
+                                                  contour_lines_method,
+                                                  contour_lines_weighted, contour_line_level, contour_line_borders,
+                                                  linewidth)
+        else:
+            for z_values, scheme in zip(z_list, contour_line_colorscheme):
+                picture_worker.generate_contour_lines(ax, z_values, gaussians[0], scheme, contour_lines_method,
+                                                      contour_lines_weighted, contour_line_level, contour_line_borders,
+                                                      linewidth)
     if pie_charts:
-        pie_chart_vis.input_image(ax, gaussians, np.min(z_sum), np.max(z_sum), num_of_pies, angle=angle, colors=colors)
+        pie_chart_vis.input_image(ax, gaussians, np.min(z_sum), np.max(z_sum), num_of_pies, angle=angle,
+                                  colors=pie_chart_colors)
+
+
+def evaluate_colors(colorschemes, number_of_schemes):
+    for i in colorschemes:
+        if len(i) >= number_of_schemes:
+            return i
