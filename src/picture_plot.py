@@ -68,7 +68,8 @@ def plot_image(ax, gaussians,
                contour_borders=None,
                crosses=False, cross_colorscheme=color_schemes.get_colorbrewer_schemes(), cross_width=3,
                cross_borders=None,
-               pie_charts=False, num_of_pies=10, angle=90, pie_chart_colors=None,
+               pie_charts=False, num_of_pies=10, angle=90, pie_chart_colors=None, pie_chart_modus="light",
+               pie_chart_borders=None,
                legend_lw=2,
                legend_colors=None,
                title=""
@@ -100,8 +101,10 @@ def plot_image(ax, gaussians,
     :param cross_borders:
     :param pie_charts:
     :param num_of_pies:
-    :param angle:
-    :param pie_chart_colors:
+    :param angle: where the pie-chart begins 0 is horizontal beginning on the right 90 beginns at the top
+    :param pie_chart_colors: Colorscheme to use. Defaults is colorbrewer
+    :param pie_chart_modus: "light" or "size" if "size" global density is coded with size elif "light" through the colorscheme
+    :param pie_chart_borders: [0.,1.] range of ether size or color lightness of the pies
     :param legend_lw:
     :param legend_colors: plots colors as lines to legend if not chosen defaults to contour-colors
     :param title: title specified if not given non is plotted
@@ -157,8 +160,10 @@ def plot_image(ax, gaussians,
                                                       contour_lines_weighted, contour_line_level, contour_line_borders,
                                                       linewidth)
     if pie_charts:
+        if pie_chart_colors is None:
+            pie_chart_colors = contour_colorscheme
         pie_chart_vis.input_image(ax, gaussians, np.min(z_sum), np.max(z_sum), num_of_pies, angle=angle,
-                                  colors=pie_chart_colors)
+                                  colorschemes=pie_chart_colors, modus=pie_chart_modus, borders=pie_chart_borders)
 
 
 def evaluate_colors(colorschemes, number_of_schemes):
