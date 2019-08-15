@@ -389,7 +389,7 @@ def get_contour_line_colors(contour_lines_colorscheme, level, borders):
 def generate_contour_lines(ax, X, gaussian, contour_lines_colorscheme, contour_lines_method="equal_density",
                            contour_lines_weighted=True, num_of_levels=8, borders=None, linewidth=2):
     if borders is None:
-        borders = [0.5, 1]
+        borders = [0.5, 1.]
     levels = get_iso_levels(X, contour_lines_method, num_of_levels + 1)
     if contour_lines_weighted:
         contour_lines_colors = get_contour_line_colors(contour_lines_colorscheme, levels, borders)

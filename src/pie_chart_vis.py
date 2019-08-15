@@ -3,6 +3,10 @@ from matplotlib.patches import Wedge
 
 from src import helper, color_schemes
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 colorschemes = color_schemes.get_colorbrewer_schemes()
 color_codes = [color_schemes.get_main_color(i)[-4] for i in colorschemes]
 
@@ -17,8 +21,8 @@ def sort_ratios(sorting_list, sorted_list):
     return zip(*sorted(zip(sorting_list, sorted_list[:len(sorting_list)])))
 
 
-def draw_pie(ax, ratios, center, radius=0.02, angle=0, colors=None):
-    if not colors:
+def draw_pie(ax, ratios, center, colors=None, radius=0.02, angle=0, ):
+    if colors is None:
         colors = color_codes
     ratios, colors = sort_ratios(ratios, colors)
     thetas = []
@@ -33,8 +37,8 @@ def draw_pie(ax, ratios, center, radius=0.02, angle=0, colors=None):
         ax.add_artist(Wedge(center, radius, *theta, fc=colors[k]))
 
 
-def get_radius(distances, value, z_min, z_max):
-    norm_values = helper.normalize_array(value, z_min, z_max, 0.2, 0.9)
+def get_radius(distances, value, z_min, z_max, borders):
+    norm_values = helper.normalize_array(value, z_min, z_max, *borders)
     return (distances[0] / 2) * norm_values
 
 
@@ -47,9 +51,14 @@ def container_size(x_min, x_max, y_min, y_max, num_of_pies_row, num_of_pies_colu
     return np.meshgrid(x, y, sparse=True), distances
 
 
-def input_image(ax, gaussian, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, angle=0, set_limit=False, colors=None):
-    if not colors:
-        colors = color_codes
+def input_image(ax, gaussian, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, angle=0, set_limit=False,
+                colorschemes=color_schemes.get_colorbrewer_schemes(),
+                modus="light", borders=None):
+    if borders is None:
+        if modus == "size":
+            borders = [0.1, 0.9]
+        else:
+            borders = [.2, .9]
     if set_limit:
         ax.set_xlim([gaussian[0][0], gaussian[0][1]])
         ax.set_ylim([gaussian[0][2], gaussian[0][3]])
@@ -69,14 +78,58 @@ def input_image(ax, gaussian, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, a
             new_ratio = helper.normalize_array(input_values, min(input_values), max(input_values), 0, 1)
             if new_ratio is not None:
                 new_ratio = np.asarray(input_values) / len(input_values)
-            draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
-                     radius=get_radius(distances, sum(input_values), z_min, z_max), colors=colors)
+            if modus == "size":
+                use_colors = [color_schemes.get_main_color(i)[-4] for i in colorschemes]
+                draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
+                         radius=get_radius(distances, sum(input_values), z_min, z_max, borders), colors=use_colors)
+            elif modus == "light":
+                use_colors = []
+                for colorscheme in colorschemes:
+                    use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
+                    # sum_input_value = sum(input_values)
+                    # if sum_input_value > z_max:
+                    #     logger.warning("Input [{}] bigger than Max-Value [{}] found ".format(sum_input_value, z_max))
+                    #     sum_input_value = z_max
+                    # if sum_input_value < z_min:
+                    #     logger.warning("Input [{}] smaller than Min-Value [{}] found ".format(sum_input_value, z_max))
+                    #     sum_input_value = z_min
+                    # logger.debug("{}{}{}{}{} = {}".format(distances, sum_input_value, z_min, z_max, borders,
+                    #                                       helper.normalize_array(sum_input_value, z_min, z_max,
+                    #                                                              *borders)))
+                    # use_colors.append(list(colorscheme["colorscheme"](colorscheme["colorscheme_name"],
+                    #                                                   [helper.normalize_array(sum_input_value, z_min,
+                    #                                                                           z_max, *borders)],
+                    #                                                   lvl_white=0)[0]))
+                logger.debug("Using colors: {}".format(use_colors))
+                draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
+                         radius=(distances[0] / 2) * 0.9, colors=use_colors)
+            else:
+                use_colors = []
+                for colorscheme in colorschemes:
+                    use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
+                draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
+                         radius=get_radius(distances, sum(input_values), z_min, z_max, [0.7, 0.9]), colors=use_colors)
 
 
-def generate_image(ax, gaussian, num_of_pies=10, angle=0, set_limit=False, colors=None):
-    if not colors:
-        colors = color_codes
+def get_colors_to_use(colorscheme, sum_input_value, z_min, z_max, borders):
+    if sum_input_value > z_max:
+        logger.warning("Input [{}] bigger than Max-Value [{}] found ".format(sum_input_value, z_max))
+        sum_input_value = z_max
+    if sum_input_value < z_min:
+        logger.warning("Input [{}] smaller than Min-Value [{}] found ".format(sum_input_value, z_max))
+        sum_input_value = z_min
+    logger.debug("{}{}{}{} = {}".format(sum_input_value, z_min, z_max, borders,
+                                        helper.normalize_array(sum_input_value, z_min, z_max,
+                                                               *borders)))
+    return list(colorscheme["colorscheme"](colorscheme["colorscheme_name"],
+                                           [helper.normalize_array(sum_input_value, z_min,
+                                                                   z_max, *borders)],
+                                           lvl_white=0)[0])
+
+
+def generate_image(ax, gaussian, num_of_pies=10, angle=0, set_limit=False,
+                   colorschemes=color_schemes.get_colorbrewer_schemes(), modus="light"):
     z_list = helper.generate_gaussians(gaussian)
     _, _, z_sum = helper.generate_weights(z_list)
     input_image(ax, gaussian, np.min(z_sum), np.max(z_sum), num_of_pies, angle=angle, set_limit=set_limit,
-                colors=colors)
+                colorschemes=colorschemes, modus=modus)

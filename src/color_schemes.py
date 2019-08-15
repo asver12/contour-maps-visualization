@@ -7,6 +7,10 @@ from matplotlib import cm
 
 from skimage import color
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def _check_constrains(min_value, max_value):
     if min_value < 0. or min_value > max_value:
@@ -27,14 +31,12 @@ def create_monochromatic_colorscheme(startcolor, levels, min_value=0, max_value=
     """
     _check_constrains(min_value, max_value)
     norm_levels = np.linspace(min_value, max_value, len(levels) + 1)
-    if verbose:
-        print("Min: {} | Max: {}".format(min_value, max_value))
+    logger.debug("Min: {} | Max: {}".format(min_value, max_value))
     color_scheme = [[float(startcolor[0]), float(startcolor[1]), float(startcolor[2]), float(i)] for i in
                     norm_levels]
     for i in range(lvl_white + 1 if lvl_white < len(levels) else len(levels) + 1):
         color_scheme[i] = np.array([1., 1., 1., 1.])
-    if verbose:
-        print(color_scheme)
+    logger.debug(color_scheme)
     return color_scheme
 
 
@@ -193,13 +195,14 @@ def create_color_brewer_colorscheme(colorscheme_name, levels, lvl_white=1, verbo
     :param verbose: outputs additional information
     :return:
     """
-    if min(levels) < 0 or min(levels) == max(levels):
+    if min(levels) < 0 or (len(levels) != 1 and min(levels) == max(levels)):
         raise ValueError(
-            "Minimum of levels is suppost to be in the intervall [0 <= x < Maximum]. Found {}".format(min(levels)))
+            "Minimum of levels is suppost to be in the intervall [0 <= x < Maximum({})]. Found {}".format(min(levels),
+                                                                                                          max(levels)))
     if max(levels) > 1.:
         raise ValueError(
-            "Maximum of levels is suppost to be in the intervall [Minimum of levels < x <= 1]. Found {}".format(
-                max(levels)))
+            "Maximum of levels is suppost to be in the intervall [Minimum({}) < x <= 1]. Found {}".format(
+                min(levels), max(levels)))
     _colorscheme = _colorschemes.get(colorscheme_name, blue_color_scheme)
     colors = []
     num_of_colors = len(_colorscheme) - 1
@@ -207,16 +210,14 @@ def create_color_brewer_colorscheme(colorscheme_name, levels, lvl_white=1, verbo
         # interpolation between the colors in the colorscheme
         start = math.floor(i * num_of_colors)
         end = math.ceil(i * num_of_colors)
-        if verbose:
-            print("Indexes: {} - {} |Value: {}, Number of colors: {}".format(start, end, i, num_of_colors))
+        logger.debug("Indexes: {} - {} |Value: {}, Number of colors: {}".format(start, end, i, num_of_colors))
         if start == end:
             colors.append(np.append(_colorscheme[start], 1.))
         else:
             colors.append(np.append(_interpolate(_colorscheme, start, end, i * num_of_colors), 1.0))
     for i in range(lvl_white if lvl_white < len(levels) else len(levels)):
         colors[i] = np.array([1., 1., 1., 1.])
-    if verbose:
-        print("{}[{}]".format(colors, len(colors)))
+    logger.debug("{}[{}]".format(colors, len(colors)))
     return colors
 
 
@@ -234,15 +235,13 @@ def create_hsl_colorscheme(startcolor, levels, min_value=0, max_value=1, lvl_whi
     _check_constrains(min_value, max_value)
     rgb = __convert_startcolor(startcolor)
     norm_levels = np.linspace(min_value, max_value, len(levels))
-    if verbose:
-        print("Min: {} | Max: {}".format(min_value, max_value))
+    logger.debug("Min: {} | Max: {}".format(min_value, max_value))
     hsv = color.rgb2hsv(rgb)
     color_scheme = [color.hsv2rgb([[[float(hsv[0][0][0]), float(i), float(1 - i)]]]) for i in norm_levels]
     color_scheme = [np.array([i[0][0][0], i[0][0][1], i[0][0][2], 1.]) for i in color_scheme]
     for i in range(lvl_white + 1 if lvl_white < len(levels) else len(levels)):
         color_scheme[i] = np.array([1., 1., 1., 1.])
-    if verbose:
-        print(color_scheme)
+    logger.debug(color_scheme)
     return color_scheme
 
 
@@ -264,14 +263,12 @@ def matplotlib_colorschemes(colorscheme_name, levels, lvl_white=1, verbose=False
     :param levels: Array with levels at which the color change
     :return: colorarray with len(levels) + 1 entrys each color is of the form [r,g,b,a], r,g,b,a in [0,1]
     """
-    if verbose:
-        print("colorscheme: {} | levels: {} |level white: {}".format(colorscheme_name, levels, lvl_white))
+    logger.debug("colorscheme: {} | levels: {} |level white: {}".format(colorscheme_name, levels, lvl_white))
     color_scheme = [i for i in
                     plt.cm.get_cmap(colorscheme_name)(np.linspace(0, 1, len(levels)))]
     for i in range(lvl_white + 1):
         color_scheme[i] = np.array([1., 1., 1., 1.])
-    if verbose:
-        print(color_scheme)
+    logger.debug(color_scheme)
     return color_scheme
 
 
