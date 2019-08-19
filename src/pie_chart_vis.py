@@ -60,21 +60,20 @@ def input_image(ax, gaussian, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, a
         else:
             borders = [.2, .9]
     if set_limit:
-        ax.set_xlim([gaussian[0][0], gaussian[0][1]])
-        ax.set_ylim([gaussian[0][2], gaussian[0][3]])
+        ax.set_xlim([gaussian[0].get_attributes()[0], gaussian[0].get_attributes()[1]])
+        ax.set_ylim([gaussian[0].get_attributes()[2], gaussian[0].get_attributes()[3]])
     if num_of_pies_y == 0:
         num_of_pies_y = num_of_pies_x
-    container, distances = container_size(gaussian[0][0], gaussian[0][1], gaussian[0][2], gaussian[0][3], num_of_pies_x,
+    container, distances = container_size(gaussian[0].x_min, gaussian[0].x_max,
+                                          gaussian[0].y_min, gaussian[0].y_max,
+                                          num_of_pies_x,
                                           num_of_pies_y)
-    gaus = []
-    for i in gaussian:
-        gaus.append(helper.Gaussian(i[4], i[5]))
     for k in container[0][0]:
         for l in container[1]:
             middle_point = k, l[0]
             input_values = []
             for j in range(len(gaussian)):
-                input_values.append(gaus[j].get(*middle_point))
+                input_values.append(gaussian[j].get_density(middle_point))
             new_ratio = helper.normalize_array(input_values, min(input_values), max(input_values), 0, 1)
             if new_ratio is not None:
                 new_ratio = np.asarray(input_values) / len(input_values)
@@ -86,20 +85,6 @@ def input_image(ax, gaussian, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, a
                 use_colors = []
                 for colorscheme in colorschemes:
                     use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
-                    # sum_input_value = sum(input_values)
-                    # if sum_input_value > z_max:
-                    #     logger.warning("Input [{}] bigger than Max-Value [{}] found ".format(sum_input_value, z_max))
-                    #     sum_input_value = z_max
-                    # if sum_input_value < z_min:
-                    #     logger.warning("Input [{}] smaller than Min-Value [{}] found ".format(sum_input_value, z_max))
-                    #     sum_input_value = z_min
-                    # logger.debug("{}{}{}{}{} = {}".format(distances, sum_input_value, z_min, z_max, borders,
-                    #                                       helper.normalize_array(sum_input_value, z_min, z_max,
-                    #                                                              *borders)))
-                    # use_colors.append(list(colorscheme["colorscheme"](colorscheme["colorscheme_name"],
-                    #                                                   [helper.normalize_array(sum_input_value, z_min,
-                    #                                                                           z_max, *borders)],
-                    #                                                   lvl_white=0)[0]))
                 logger.debug("Using colors: {}".format(use_colors))
                 draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
                          radius=(distances[0] / 2) * 0.9, colors=use_colors)
@@ -127,9 +112,17 @@ def get_colors_to_use(colorscheme, sum_input_value, z_min, z_max, borders):
                                            lvl_white=0)[0])
 
 
+def generate_lumen_image(ax, gaussian, num_of_pies=10, angle=0, set_limit=False,
+                         colorschemes=color_schemes.get_colorbrewer_schemes(), modus="light"):
+    z_list = helper.generate_distributions(gaussian)
+    _, _, z_sum = helper.generate_weights(z_list)
+    input_image(ax, gaussian, np.min(z_sum), np.max(z_sum), num_of_pies, angle=angle, set_limit=set_limit,
+                colorschemes=colorschemes, modus=modus)
+
+
 def generate_image(ax, gaussian, num_of_pies=10, angle=0, set_limit=False,
                    colorschemes=color_schemes.get_colorbrewer_schemes(), modus="light"):
-    z_list = helper.generate_gaussians(gaussian)
+    z_list = helper.generate_distributions(gaussian)
     _, _, z_sum = helper.generate_weights(z_list)
     input_image(ax, gaussian, np.min(z_sum), np.max(z_sum), num_of_pies, angle=angle, set_limit=set_limit,
                 colorschemes=colorschemes, modus=modus)

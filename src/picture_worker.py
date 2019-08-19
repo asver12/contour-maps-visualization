@@ -263,7 +263,7 @@ def input_image(ax, gaussians, z_list, z_min, z_max, colorschemes,
                 borders=None):
     img, alpha = calculate_image(gaussians, z_list, z_min, z_max, colorschemes, method, num_of_levels, color_space,
                                  use_c_implementation, use_alpha_sum, blending_operator, borders)
-    extent = gaussians[0][:4]
+    extent = gaussians[0].get_attributes()[:4]
     ax.imshow(img, extent=extent, origin='lower')
 
 
@@ -405,8 +405,9 @@ def plot_contour_lines(ax, X, gaussian, levels, colors, linewidth=2):
     contours = find_contour_lines(X, levels)
     for i, color in zip(contours[:len(levels)], colors[:len(levels)]):
         for contour in i:
-            contour = helper.normalize_2d_array(np.asarray(contour), 0, X.shape[0], *gaussian[:2], 0, X.shape[1],
-                                                *gaussian[2:4])
+            contour = helper.normalize_2d_array(np.asarray(contour), 0, X.shape[0], *gaussian.get_attributes()[:2], 0,
+                                                X.shape[1],
+                                                *gaussian.get_attributes()[2:4])
 
             ax.plot(contour[:, 1], contour[:, 0], linewidth=linewidth, color=color)
 

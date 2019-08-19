@@ -12,6 +12,8 @@ from src import helper, picture_worker, color_schemes, hierarchic_blending_opera
 
 import logging
 
+from src.Gaussian import Gaussian
+
 logger = logging.getLogger(__name__)
 
 
@@ -280,7 +282,7 @@ def get_line(gaussian, x_list, y_list, z_list, eigenvalue, eigenvector, colorsch
              method="equal_density",
              num_of_levels=5):
     iso_level = picture_worker.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels)
-    first_line, second_line = get_half_lines(gaussian[4], eigenvector, eigenvalue)
+    first_line, second_line = get_half_lines(gaussian.means, eigenvector, eigenvalue)
     logger.debug("------------------------------------------------------------")
     logger.debug("First Part of Line {}".format(first_line))
     logger.debug("Second Part of Line {}".format(second_line))
@@ -301,10 +303,10 @@ def generate_rectangle_from_line(line, eigenvector, length):
     return new_line
 
 
-def get_cross(gaussian, colorscheme, min_value=0., max_value=1., length=3, *args, **kwargs):
+def get_cross(gaussian: Gaussian, colorscheme, min_value=0., max_value=1., length=3, *args, **kwargs):
     picture_worker.check_constrains(min_value, max_value)
-    x_list, y_list, z_list = helper.get_gaussian(*gaussian)
-    eigenvalues, eigenvectors = np.linalg.eig(gaussian[5])
+    x_list, y_list, z_list = gaussian.get_density_grid()
+    eigenvalues, eigenvectors = np.linalg.eig(gaussian.cov_matrix)
     logger.debug(gaussian)
     logger.debug(eigenvalues)
     logger.debug(eigenvectors)
@@ -341,13 +343,19 @@ def genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length=3, 
     return [get_cross(i, j, *k, length, *args, **kwargs) for i, j, k in zip(gaussians, colorschemes, z_weights)]
 
 
-def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, length=3, borders=None, color_space="lab", *args, **kwargs):
+def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, length=3, borders=None, color_space="lab", *args,
+                  **kwargs):
+    if not isinstance(gaussians[0], Gaussian):
+        raise ValueError("Expected Gaussian instead got {}".format(type(gaussians[0])))
     cross_lines = genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length, borders, *args, **kwargs)
     for cross in cross_lines:
         generate_cross(ax, *cross[:4])
     fill_between_lines(ax, cross_lines, color_space=color_space)
 
+
 def generate_image(gaussians, colorschemes, length=3, borders=None, *args, **kwargs):
+    if not isinstance(gaussians[0], Gaussian):
+        raise ValueError("Expected Gaussian instead got {}".format(type(gaussians[0])))
     logger.debug(gaussians)
     if borders is None:
         borders = [0, 1]
