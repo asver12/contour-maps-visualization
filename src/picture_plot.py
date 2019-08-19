@@ -53,7 +53,7 @@ def plot_images(gaussians, titles="", colors="", columns=5,
 
 def generate_title(titles, gaussian, index):
     if (len(titles) <= index or titles == "") and gaussian:
-        return '\n'.join("{}".format(gau[4:-1]) for gau in gaussian)
+        return '\n'.join("{}".format(gau.get_attributes()[4:-1]) for gau in gaussian)
     return titles[index]
 
 
@@ -66,7 +66,7 @@ def plot_image(ax, gaussians,
                contour_method="equal_density", contour_lvl=8, color_space="lab", use_c_implementation=True,
                use_alpha_sum=False, blending_operator=hierarchic_blending_operator.porter_duff_source_over,
                contour_borders=None,
-               crosses=False, cross_colorscheme=color_schemes.get_colorbrewer_schemes(), cross_width=3,
+               crosses=False, cross_colorscheme=color_schemes.get_colorbrewer_schemes(), cross_width=0.5,
                cross_borders=None,
                pie_charts=False, num_of_pies=10, angle=90, pie_chart_colors=None, pie_chart_modus="light",
                pie_chart_borders=None,
@@ -111,7 +111,7 @@ def plot_image(ax, gaussians,
     :return:
     """
 
-    z_list = helper.generate_gaussians(gaussians)
+    z_list = helper.generate_distributions(gaussians)
     z_min, z_max, z_sum = helper.generate_weights(z_list)
 
     # # to avoid a stretched y-axis
@@ -119,11 +119,11 @@ def plot_image(ax, gaussians,
     #
     if not contours:
         if isinstance(ax, type(plt)):
-            ax.xlim(gaussians[0][0], gaussians[0][1])
-            ax.ylim(gaussians[0][2], gaussians[0][3])
+            ax.xlim(gaussians[0].x_min, gaussians[0].x_max)
+            ax.ylim(gaussians[0].y_min, gaussians[0].y_max)
         else:
-            ax.set_xlim(gaussians[0][0], gaussians[0][1])
-            ax.set_ylim(gaussians[0][2], gaussians[0][3])
+            ax.set_xlim(gaussians[0].x_min, gaussians[0].x_max)
+            ax.set_ylim(gaussians[0].y_min, gaussians[0].y_max)
     if title:
         if isinstance(ax, type(plt)):
             ax.title(title)

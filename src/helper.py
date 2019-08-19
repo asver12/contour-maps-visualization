@@ -1,10 +1,14 @@
 import random
+from typing import List
+
 import numpy as np
 from scipy.stats import multivariate_normal
 
 from src import picture_worker, color_schemes
 
 import logging
+
+from src.Distribution import Distribution
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +96,11 @@ def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, 
     return get_gaussian(x_min, x_max, y_min, y_max, [mu_x_1, mu_y_1], cov, size)
 
 
-def generate_gaussians(gaussians):
+def generate_distributions(distributions: List[Distribution]):
+    return [distribution.get_density_grid()[2] for distribution in distributions]
+
+
+def generate_gaussians_old(gaussians):
     return [get_gaussian(*gaussian)[2] for gaussian in gaussians]
 
 
