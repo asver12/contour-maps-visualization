@@ -22,4 +22,4 @@ class Distribution(ABC):
         return [self.x_min, self.x_max, self.y_min, self.y_max, self.size, self.weight]
 
     def __str__(self):
-        return "[{}, {}, {}, {}, {}, {}]".format(self.x_min, self.x_max, self.y_min, self.y_max, self.weight, self.size)
+        return "[x_min: {}, x_max: {}, y_min: {}, y_max: {}, weight: {}, size: {}]".format(self.x_min, self.x_max, self.y_min, self.y_max, self.weight, self.size)

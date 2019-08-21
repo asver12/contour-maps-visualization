@@ -104,6 +104,14 @@ def generate_gaussians_old(gaussians):
     return [get_gaussian(*gaussian)[2] for gaussian in gaussians]
 
 
+def get_x_values(distributions: List[Distribution]):
+    return min([dist.x_min for dist in distributions]), max([dist.x_max for dist in distributions])
+
+
+def get_y_values(distributions: List[Distribution]):
+    return min([dist.y_min for dist in distributions]), max([dist.y_max for dist in distributions])
+
+
 def generate_gaussians_xyz(gaussians):
     x_list, y_list, z_list = [], [], []
     for gaussian in gaussians:
@@ -151,20 +159,18 @@ def find_index(number, levels, verbose=False):
     """
     start = 0
     end = len(levels) - 1
-    if verbose:
-        print("Number: {}".format(number))
-        print("Level: ", end=" ")
-        for i in levels:
-            print(i, end=", ")
-        print("")
+    logger.debug("Number: {}".format(number))
+    logger.debug("Level: ", end=" ")
+    for i in levels:
+        logger.debug(i, end=", ")
+    logger.debug("")
     if number < levels[start]:
         return 0
     if number > levels[end]:
         return end + 1
     pivo = int((end - start) / 2 + start)
     while start != pivo:
-        if verbose:
-            print("{}:{}:{}".format(start, pivo, end))
+        logger.debug("{}:{}:{}".format(start, pivo, end))
         if number < levels[pivo]:
             end = pivo
         else:

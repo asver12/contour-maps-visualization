@@ -68,7 +68,7 @@ def plot_image(ax, gaussians,
                contour_borders=None,
                crosses=False, cross_colorscheme=color_schemes.get_colorbrewer_schemes(), cross_width=0.5,
                cross_borders=None,
-               pie_charts=False, num_of_pies=10, angle=90, pie_chart_colors=None, pie_chart_modus="light",
+               pie_charts=False, pie_num=10, pie_angle=90, pie_chart_colors=None, pie_chart_modus="light",
                pie_chart_borders=None,
                legend_lw=2,
                legend_colors=None,
@@ -100,8 +100,8 @@ def plot_image(ax, gaussians,
     :param cross_width:
     :param cross_borders:
     :param pie_charts:
-    :param num_of_pies:
-    :param angle: where the pie-chart begins 0 is horizontal beginning on the right 90 beginns at the top
+    :param pie_num:
+    :param pie_angle: where the pie-chart begins 0 is horizontal beginning on the right 90 beginns at the top
     :param pie_chart_colors: Colorscheme to use. Defaults is colorbrewer
     :param pie_chart_modus: "light" or "size" if "size" global density is coded with size elif "light" through the colorscheme
     :param pie_chart_borders: [0.,1.] range of ether size or color lightness of the pies
@@ -119,11 +119,11 @@ def plot_image(ax, gaussians,
     #
     if not contours:
         if isinstance(ax, type(plt)):
-            ax.xlim(gaussians[0].x_min, gaussians[0].x_max)
-            ax.ylim(gaussians[0].y_min, gaussians[0].y_max)
+            ax.xlim(helper.get_x_values(gaussians))
+            ax.ylim(helper.get_y_values(gaussians))
         else:
-            ax.set_xlim(gaussians[0].x_min, gaussians[0].x_max)
-            ax.set_ylim(gaussians[0].y_min, gaussians[0].y_max)
+            ax.set_xlim(helper.get_x_values(gaussians))
+            ax.set_ylim(helper.get_y_values(gaussians))
     if title:
         if isinstance(ax, type(plt)):
             ax.title(title)
@@ -131,7 +131,10 @@ def plot_image(ax, gaussians,
             ax.set_title(title)
     if not legend_colors:
         legend_colors = color_schemes.get_representiv_colors(
-            evaluate_colors([contour_line_colorscheme, contour_colorscheme, pie_chart_colors], len(gaussians)))
+            evaluate_colors([evaluate_colors(
+                [[contour_line_colorscheme, ] if isinstance(contour_line_colorscheme, dict) else contour_line_colorscheme,
+                 [contour_colorscheme, ] if isinstance(contour_colorscheme, dict) else contour_colorscheme,
+                 pie_chart_colors], len(gaussians)), pie_chart_colors], len(gaussians)))
     custom_lines = [Line2D([0], [0], color=legend_colors[i], lw=legend_lw) for i in
                     range(len(gaussians))]
     ax.legend(custom_lines, [i for i in range(len(gaussians))],
@@ -162,7 +165,7 @@ def plot_image(ax, gaussians,
     if pie_charts:
         if pie_chart_colors is None:
             pie_chart_colors = contour_colorscheme
-        pie_chart_vis.input_image(ax, gaussians, np.min(z_sum), np.max(z_sum), num_of_pies, angle=angle,
+        pie_chart_vis.input_image(ax, gaussians, np.min(z_sum), np.max(z_sum), pie_num, angle=pie_angle,
                                   colorschemes=pie_chart_colors, modus=pie_chart_modus, borders=pie_chart_borders)
 
 

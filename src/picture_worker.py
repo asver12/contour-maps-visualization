@@ -57,8 +57,8 @@ def get_iso_levels(X, method="equal_density", num_of_levels=8):
 def norm_levels(levels, new_min_value=0., new_max_value=1., old_min=None, old_max=None):
     levels = np.asarray(levels)
     if levels.size != 0:
-        if old_min == None or old_max == None:
-            return np.interp(levels, (levels.min(), levels.max()), (new_min_value, new_max_value))
+        if old_min is None or old_max is None:
+            return np.interp(levels, (min(levels), max(levels)), (new_min_value, new_max_value))
         else:
             return np.interp(levels, (old_min, old_max), (new_min_value, new_max_value))
     else:
@@ -263,7 +263,8 @@ def input_image(ax, gaussians, z_list, z_min, z_max, colorschemes,
                 borders=None):
     img, alpha = calculate_image(gaussians, z_list, z_min, z_max, colorschemes, method, num_of_levels, color_space,
                                  use_c_implementation, use_alpha_sum, blending_operator, borders)
-    extent = gaussians[0].get_attributes()[:4]
+    extent = [*helper.get_x_values(gaussians), *helper.get_y_values(gaussians)]
+
     ax.imshow(img, extent=extent, origin='lower')
 
 
@@ -391,6 +392,7 @@ def generate_contour_lines(ax, X, gaussian, contour_lines_colorscheme, contour_l
     if borders is None:
         borders = [0.5, 1.]
     levels = get_iso_levels(X, contour_lines_method, num_of_levels + 1)
+    logger.debug("Level: {}".format(levels))
     if contour_lines_weighted:
         contour_lines_colors = get_contour_line_colors(contour_lines_colorscheme, levels, borders)
     else:
@@ -405,18 +407,18 @@ def plot_contour_lines(ax, X, gaussian, levels, colors, linewidth=2):
     contours = find_contour_lines(X, levels)
     for i, color in zip(contours[:len(levels)], colors[:len(levels)]):
         for contour in i:
-            contour = helper.normalize_2d_array(np.asarray(contour), 0, X.shape[0], *gaussian.get_attributes()[:2], 0,
+            contour = helper.normalize_2d_array(contour, 0, X.shape[0], gaussian.y_min, gaussian.y_max, 0,
                                                 X.shape[1],
-                                                *gaussian.get_attributes()[2:4])
-
+                                                gaussian.x_min, gaussian.x_max)
             ax.plot(contour[:, 1], contour[:, 0], linewidth=linewidth, color=color)
 
 
 def get_normalized_contours(X, contours, gaussian):
     for i, k in enumerate(contours):
         for j, contour in enumerate(k):
-            contours[i][j] = helper.normalize_2d_array(np.asarray(contour), 0, X.shape[0], *gaussian[:2], 0, X.shape[1],
-                                                       *gaussian[2:4])
+            contours[i][j] = helper.normalize_2d_array(np.asarray(contour), 0, X.shape[0], gaussian.x_min,
+                                                       gaussian.x_max, 0, X.shape[1],
+                                                       gaussian.y_min, gaussian.y_max)
     return contours
 
 

@@ -51,6 +51,10 @@ def container_size(x_min, x_max, y_min, y_max, num_of_pies_row, num_of_pies_colu
     return np.meshgrid(x, y, sparse=True), distances
 
 
+def get_distance_ratio(num_of_pies_x, x_values, y_values):
+    return int(num_of_pies_x * (abs(y_values[1] - y_values[0]) / abs(x_values[1] - x_values[0])))
+
+
 def input_image(ax, gaussian, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, angle=0, set_limit=False,
                 colorschemes=color_schemes.get_colorbrewer_schemes(),
                 modus="light", borders=None):
@@ -60,12 +64,12 @@ def input_image(ax, gaussian, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, a
         else:
             borders = [.2, .9]
     if set_limit:
-        ax.set_xlim([gaussian[0].get_attributes()[0], gaussian[0].get_attributes()[1]])
-        ax.set_ylim([gaussian[0].get_attributes()[2], gaussian[0].get_attributes()[3]])
+        ax.set_xlim([helper.get_x_values(gaussian)])
+        ax.set_ylim([helper.get_y_values(gaussian)])
     if num_of_pies_y == 0:
-        num_of_pies_y = num_of_pies_x
-    container, distances = container_size(gaussian[0].x_min, gaussian[0].x_max,
-                                          gaussian[0].y_min, gaussian[0].y_max,
+        num_of_pies_y = get_distance_ratio(num_of_pies_x, helper.get_x_values(gaussian), helper.get_y_values(gaussian))
+    container, distances = container_size(*helper.get_x_values(gaussian),
+                                          *helper.get_y_values(gaussian),
                                           num_of_pies_x,
                                           num_of_pies_y)
     for k in container[0][0]:
@@ -80,20 +84,20 @@ def input_image(ax, gaussian, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, a
             if modus == "size":
                 use_colors = [color_schemes.get_main_color(i)[-4] for i in colorschemes]
                 draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
-                         radius=get_radius(distances, sum(input_values), z_min, z_max, borders), colors=use_colors)
+                         radius=get_radius(min(distances), sum(input_values), z_min, z_max, borders), colors=use_colors)
             elif modus == "light":
                 use_colors = []
                 for colorscheme in colorschemes:
                     use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
                 logger.debug("Using colors: {}".format(use_colors))
                 draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
-                         radius=(distances[0] / 2) * 0.9, colors=use_colors)
+                         radius=(min(distances) / 2) * 0.9, colors=use_colors)
             else:
                 use_colors = []
                 for colorscheme in colorschemes:
                     use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
                 draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
-                         radius=get_radius(distances, sum(input_values), z_min, z_max, [0.7, 0.9]), colors=use_colors)
+                         radius=get_radius(min(distances), sum(input_values), z_min, z_max, [0.7, 0.9]), colors=use_colors)
 
 
 def get_colors_to_use(colorscheme, sum_input_value, z_min, z_max, borders):
