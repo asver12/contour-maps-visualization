@@ -23,6 +23,9 @@ void mmMultHierarchic(int m, int n, int numberOfMatrizes, double **matrizes,
 void mmMultSumHierarchic(int m, int n, int numberOfMatrizes, double **matrizes,
                          double **weights, double *C, double *weightedC,
                          const char *colorspace);
+void mmMultQuadraticHierarchic(int m, int n, int numberOfMatrizes,
+                               double **matrizes, double **weights, double *C,
+                               double *weightsC, const char *colorspace);
 }  // namespace pictureMerge
 
 #ifdef __cplusplus

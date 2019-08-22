@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
-from src import pie_chart_vis, helper, picture_worker, color_schemes, hierarchic_blending_operator, picture_cross
+from src import pie_chart_vis, helper, picture_contours, color_schemes, hierarchic_blending_operator, picture_cross, \
+    picture_contour_lines
 
 import logging
 
@@ -132,7 +133,8 @@ def plot_image(ax, gaussians,
     if not legend_colors:
         legend_colors = color_schemes.get_representiv_colors(
             evaluate_colors([evaluate_colors(
-                [[contour_line_colorscheme, ] if isinstance(contour_line_colorscheme, dict) else contour_line_colorscheme,
+                [[contour_line_colorscheme, ] if isinstance(contour_line_colorscheme,
+                                                            dict) else contour_line_colorscheme,
                  [contour_colorscheme, ] if isinstance(contour_colorscheme, dict) else contour_colorscheme,
                  pie_chart_colors], len(gaussians)), pie_chart_colors], len(gaussians)))
     custom_lines = [Line2D([0], [0], color=legend_colors[i], lw=legend_lw) for i in
@@ -141,27 +143,28 @@ def plot_image(ax, gaussians,
               loc='upper left', frameon=False)
     if contours:
         if isinstance(contour_colorscheme, dict):
-            picture_worker.input_image(ax, [gaussians[0]], [z_sum], np.min(z_sum), np.max(z_sum), [contour_colorscheme],
-                                       contour_method,
-                                       contour_lvl, color_space, use_c_implementation, use_alpha_sum,
-                                       blending_operator=blending_operator, borders=contour_borders)
+            picture_contours.input_image(ax, [gaussians[0]], [z_sum], np.min(z_sum), np.max(z_sum), [contour_colorscheme],
+                                         contour_method,
+                                         contour_lvl, color_space, use_c_implementation, use_alpha_sum,
+                                         blending_operator=blending_operator, borders=contour_borders)
         else:
-            picture_worker.input_image(ax, gaussians, z_list, z_min, z_max, contour_colorscheme, contour_method,
-                                       contour_lvl, color_space, use_c_implementation, use_alpha_sum,
-                                       blending_operator=blending_operator, borders=contour_borders)
+            picture_contours.input_image(ax, gaussians, z_list, z_min, z_max, contour_colorscheme, contour_method,
+                                         contour_lvl, color_space, use_c_implementation, use_alpha_sum,
+                                         blending_operator=blending_operator, borders=contour_borders)
     if crosses:
         picture_cross.input_crosses(ax, gaussians, z_list, z_min, z_max, cross_colorscheme, cross_width, cross_borders)
     if contour_lines:
         if isinstance(contour_line_colorscheme, dict):
-            picture_worker.generate_contour_lines(ax, z_sum, gaussians[0], contour_line_colorscheme,
-                                                  contour_lines_method,
-                                                  contour_lines_weighted, contour_line_level, contour_line_borders,
-                                                  linewidth)
+            picture_contour_lines.generate_contour_lines(ax, z_sum, gaussians[0], contour_line_colorscheme,
+                                                         contour_lines_method,
+                                                         contour_lines_weighted, contour_line_level, contour_line_borders,
+                                                         linewidth)
         else:
             for z_values, scheme in zip(z_list, contour_line_colorscheme):
-                picture_worker.generate_contour_lines(ax, z_values, gaussians[0], scheme, contour_lines_method,
-                                                      contour_lines_weighted, contour_line_level, contour_line_borders,
-                                                      linewidth)
+                picture_contour_lines.generate_contour_lines(ax, z_values, gaussians[0], scheme, contour_lines_method,
+                                                             contour_lines_weighted, contour_line_level,
+                                                             contour_line_borders,
+                                                             linewidth)
     if pie_charts:
         if pie_chart_colors is None:
             pie_chart_colors = contour_colorscheme

@@ -39,7 +39,7 @@ def draw_pie(ax, ratios, center, colors=None, radius=0.02, angle=0, ):
 
 def get_radius(distances, value, z_min, z_max, borders):
     norm_values = helper.normalize_array(value, z_min, z_max, *borders)
-    return (distances[0] / 2) * norm_values
+    return (distances / 2) * norm_values
 
 
 def container_size(x_min, x_max, y_min, y_max, num_of_pies_row, num_of_pies_column):
@@ -97,7 +97,8 @@ def input_image(ax, gaussian, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, a
                 for colorscheme in colorschemes:
                     use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
                 draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
-                         radius=get_radius(min(distances), sum(input_values), z_min, z_max, [0.7, 0.9]), colors=use_colors)
+                         radius=get_radius(min(distances), sum(input_values), z_min, z_max, [0.7, 0.9]),
+                         colors=use_colors)
 
 
 def get_colors_to_use(colorscheme, sum_input_value, z_min, z_max, borders):
@@ -114,19 +115,3 @@ def get_colors_to_use(colorscheme, sum_input_value, z_min, z_max, borders):
                                            [helper.normalize_array(sum_input_value, z_min,
                                                                    z_max, *borders)],
                                            lvl_white=0)[0])
-
-
-def generate_lumen_image(ax, gaussian, num_of_pies=10, angle=0, set_limit=False,
-                         colorschemes=color_schemes.get_colorbrewer_schemes(), modus="light"):
-    z_list = helper.generate_distributions(gaussian)
-    _, _, z_sum = helper.generate_weights(z_list)
-    input_image(ax, gaussian, np.min(z_sum), np.max(z_sum), num_of_pies, angle=angle, set_limit=set_limit,
-                colorschemes=colorschemes, modus=modus)
-
-
-def generate_image(ax, gaussian, num_of_pies=10, angle=0, set_limit=False,
-                   colorschemes=color_schemes.get_colorbrewer_schemes(), modus="light"):
-    z_list = helper.generate_distributions(gaussian)
-    _, _, z_sum = helper.generate_weights(z_list)
-    input_image(ax, gaussian, np.min(z_sum), np.max(z_sum), num_of_pies, angle=angle, set_limit=set_limit,
-                colorschemes=colorschemes, modus=modus)

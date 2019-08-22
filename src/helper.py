@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 from scipy.stats import multivariate_normal
 
-from src import picture_worker, color_schemes
+from src import picture_contours, color_schemes
 
 import logging
 
@@ -189,8 +189,8 @@ def generate_monochromatic_plot_from_gaussians(z_list, color_schemes_list):
     """
     z_color_list = []
     for z, startcolor in zip(z_list, color_schemes_list):
-        z_color, _ = picture_worker.get_colorgrid(z, color_schemes.create_monochromatic_colorscheme, 10, False,
-                                                  startcolor=startcolor)
+        z_color, _ = picture_contours.get_colorgrid(z, color_schemes.create_monochromatic_colorscheme, 10, False,
+                                                    startcolor=startcolor)
         z_color_list.append(z_color)
     return z_color_list
 
@@ -204,7 +204,7 @@ def generate_brewer_plot_from_gaussians(z_list, color_schemes_list):
     """
     z_color_list = []
     for z, colorscheme in zip(z_list, color_schemes_list):
-        z_color, _ = picture_worker.get_colorgrid(z, color_schemes.create_color_brewer_colorscheme, 10, False,
-                                                  colorscheme=colorscheme)
+        z_color, _ = picture_contours.get_colorgrid(z, color_schemes.create_color_brewer_colorscheme, 10, False,
+                                                    colorscheme=colorscheme)
         z_color_list.append(z_color)
     return z_color_list

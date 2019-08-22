@@ -6,14 +6,16 @@ project (PICTUREMERGE)
 add_subdirectory (src)
 add_subdirectory (tests)
 
-enable_testing ()
+if (GTest_FOUND)
+  enable_testing ()
 
-add_test(
-    NAME runBlendingOperatorsUnitTests
-    COMMAND runBlendingOperatorsUnitTests
-)
+  add_test(
+      NAME runBlendingOperatorsUnitTests
+      COMMAND runBlendingOperatorsUnitTests
+  )
 
-add_test(
-    NAME runPictureMergeUnitTests
-    COMMAND runPictureMergeUnitTests
-)
+  add_test(
+      NAME runPictureMergeUnitTests
+      COMMAND runPictureMergeUnitTests
+  )
+endif()
