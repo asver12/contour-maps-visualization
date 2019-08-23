@@ -104,6 +104,33 @@ def call_hierarchic_merge(matrizes, weights, colorspace="lab"):
                                                                                                                  1)
 
 
+lib.mmMultQuadraticHierarchic.argtypes = c_int, c_int, c_int, doublepp, doublepp, POINTER(c_double), POINTER(
+    c_double), POINTER(c_char)
+lib.mmMultQuadraticHierarchic.restype = None
+
+
+def call_l2_sum_merge(matrizes, weights, colorspace="lab"):
+    num_of_matrizes, m, n = len(matrizes), len(matrizes[0]), len(matrizes[0][0])
+
+    new_matrix = np.zeros(matrizes[0].shape, dtype=np.float)
+    new_weight = np.zeros(weights[0].shape, dtype=np.float)
+    input_matrizes = np.array([np.ctypeslib.as_array(np.asarray(i, dtype=np.float).flatten()) for i in matrizes])
+    input_weights = np.array([np.ctypeslib.as_array(np.asarray(i, dtype=np.float).flatten()) for i in weights])
+
+    c_new_matrix_1 = create_cdll_type(new_matrix)
+    c_new_weight_1 = create_cdll_type(new_weight)
+    c_input_matrizes = (input_matrizes.__array_interface__['data'][0]
+                        + np.arange(input_matrizes.shape[0]) * input_matrizes.strides[0]).astype(np.uintp)
+    c_input_weights = (input_weights.__array_interface__['data'][0]
+                       + np.arange(input_weights.shape[0]) * input_weights.strides[0]).astype(np.uintp)
+
+    lib.mmMultQuadraticHierarchic(m, n, num_of_matrizes, c_input_matrizes, c_input_weights, c_new_matrix_1,
+                                  c_new_weight_1,
+                                  colorspace.encode('utf-8'))
+    return np.ctypeslib.as_array(c_new_matrix_1).reshape(m, n, 3), np.ctypeslib.as_array(c_new_weight_1).reshape(m, n,
+                                                                                                                 1)
+
+
 lib.mmMultSumHierarchic.argtypes = c_int, c_int, c_int, doublepp, doublepp, POINTER(c_double), POINTER(
     c_double), POINTER(c_char)
 lib.mmMultSumHierarchic.restype = None
@@ -134,14 +161,14 @@ def call_hierarchic_alpha_sum_merge(matrizes, weights, colorspace="lab"):
                        + np.arange(input_weights.shape[0]) * input_weights.strides[0]).astype(np.uintp)
 
     lib.mmMultSumHierarchic(m, n, num_of_matrizes, c_input_matrizes, c_input_weights, c_new_matrix_1, c_new_weight_1,
-                         colorspace.encode('utf-8'))
+                            colorspace.encode('utf-8'))
     return np.ctypeslib.as_array(c_new_matrix_1).reshape(m, n, 3), np.ctypeslib.as_array(c_new_weight_1).reshape(m, n,
                                                                                                                  1)
 
 
 if __name__ == "__main__":
     from src import color_schemes
-    from src import picture_worker
+    from src import picture_contours
     from src import helper
 
     from src import hierarchic_blending_operator
@@ -169,22 +196,23 @@ if __name__ == "__main__":
     X, Y, Z = helper.get_gaussian(x_min, x_max, y_min, y_max, *gaussian_1, size)
     X_1, Y_1, Z_1 = helper.get_gaussian(x_min, x_max, y_min, y_max, *gaussian_2, size)
     X_2, Y_2, Z_2 = helper.get_gaussian(x_min, x_max, y_min, y_max, *gaussian_3, size)
-    Z_color, Z_alpha = picture_worker.get_colorgrid(Z, color_schemes.matplotlib_colorschemes, 10, colorscheme_name="PuBu")
-    Z_color_1, Z_alpha_1 = picture_worker.get_colorgrid(Z_1, color_schemes.matplotlib_colorschemes, 10,
-                                                        colorscheme_name="OrRd")
-    Z_color_2, Z_alpha_2 = picture_worker.get_colorgrid(Z_2, color_schemes.matplotlib_colorschemes, 10,
-                                                        colorscheme_name="RdPu")
+    Z_color, Z_alpha = picture_contours.get_colorgrid(Z, color_schemes.matplotlib_colorschemes, 10,
+                                                      colorscheme_name="PuBu")
+    Z_color_1, Z_alpha_1 = picture_contours.get_colorgrid(Z_1, color_schemes.matplotlib_colorschemes, 10,
+                                                          colorscheme_name="OrRd")
+    Z_color_2, Z_alpha_2 = picture_contours.get_colorgrid(Z_2, color_schemes.matplotlib_colorschemes, 10,
+                                                          colorscheme_name="RdPu")
     matrizen = [Z, Z_1]
     colors = [Z_color, Z_color_1]
     result = callSimpleMerge(colors, matrizen)
     print(result[1])
-    print(picture_worker.combine_multiple_images_hierarchic(hierarchic_blending_operator.porter_duff_source_over,
-                                                            [Z_color, Z_color_1], [Z,
-                                                                                   Z_1])[1])
+    print(picture_contours.combine_multiple_images_hierarchic(hierarchic_blending_operator.porter_duff_source_over,
+                                                              [Z_color, Z_color_1], [Z,
+                                                                                     Z_1])[1])
     print(result[0])
-    print(picture_worker.combine_multiple_images_hierarchic(hierarchic_blending_operator.porter_duff_source_over,
-                                                            [Z_color, Z_color_1], [Z,
-                                                                                   Z_1])[0])
+    print(picture_contours.combine_multiple_images_hierarchic(hierarchic_blending_operator.porter_duff_source_over,
+                                                              [Z_color, Z_color_1], [Z,
+                                                                                     Z_1])[0])
 
     print("---------------------------------------------------------")
     print("-----------------Hierarchic------------------------------")
@@ -193,5 +221,5 @@ if __name__ == "__main__":
     weights = [Z, Z_1, Z_2]
     results = call_hierarchic_merge(pics, weights)
     print(results[0])
-    print(picture_worker.combine_multiple_images_hierarchic(hierarchic_blending_operator.porter_duff_source_over,
-                                                            pics, weights)[0])
+    print(picture_contours.combine_multiple_images_hierarchic(hierarchic_blending_operator.porter_duff_source_over,
+                                                              pics, weights)[0])

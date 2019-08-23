@@ -8,6 +8,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def get_gaussian_from_list(dist_list):
+    if len(dist_list) == 7:
+        return Gaussian(x_min=dist_list[0],
+                        x_max=dist_list[1],
+                        y_min=dist_list[2],
+                        y_max=dist_list[3],
+                        means=dist_list[4],
+                        cov_matrix=dist_list[5],
+                        size=dist_list[6])
+    else:
+        raise ValueError("Expected length of 7 instead got {}".format(len(dist_list)))
+
+
 class Gaussian(Distribution):
     def __init__(self, means=None, cov_matrix=None, *args, **kwargs):
         super().__init__(*args, **kwargs)

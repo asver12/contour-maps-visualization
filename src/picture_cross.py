@@ -1,99 +1,21 @@
-import math
 import numpy as np
-
-from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
 import scipy.ndimage
 import itertools
-import collections
 import pyclipper
 
-from src import helper, picture_worker, color_schemes, hierarchic_blending_operator
+from src import helper, picture_contours, color_schemes, hierarchic_blending_operator
 
 import logging
 
 from src.Gaussian import Gaussian
+from src.picture_contours import _convert_color_space_to_rgb, _convert_rgb_image
 
 logger = logging.getLogger(__name__)
 
 
-def plot_images(cross_lines, gaussians, z_sums, colors=None, color_space="lab", contour_lines_method="equal_density",
-                contour_lines=True,
-                contour_lines_weighted=True, num_of_levels=8,
-                title="", with_axis=True, borders=None, linewidth_contour=2, linewidth_cross=0.5, columns=5,
-                bottom=0.0,
-                left=0., right=2.,
-                top=2.):
-    logger.debug("{}".format(["mu_x", "variance_x", "mu_y", "variance_y"]))
-    if len(gaussians) == 1:
-        title_j = ""
-        if title == "" and gaussians:
-            title_j = '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[0])
-        elif len(title) > columns:
-            title_j = title[columns]
-        color_legend = colors if colors else []
-        plot_image(plt, cross_lines[0], gaussians[0], z_sums[0], color_legend, color_space, contour_lines_method,
-                   contour_lines_weighted,
-                   title_j, with_axis, num_of_levels, borders, linewidth_contour, linewidth_cross)
-        plt.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
-    else:
-        for i in range(math.ceil(len(gaussians) / columns)):
-            subplot = cross_lines[i * columns:(i + 1) * columns]
-            sub_sums = z_sums[i * columns:(i + 1) * columns]
-            fig, axes = plt.subplots(1, len(subplot), sharex='col', sharey='row')
-            if len(subplot) == 1:
-                title_j = ""
-                if title == "" and gaussians:
-                    title_j = '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[i * columns])
-                elif len(title) > i * columns:
-                    title_j = title[i * columns]
-                plot_image(axes, subplot[0], gaussians[i * columns], sub_sums[0], colors, color_space,
-                           contour_lines_method,
-                           contour_lines_weighted,
-                           title_j,
-                           with_axis,
-                           num_of_levels,
-                           borders,
-                           linewidth_contour)
-            else:
-                for j in range(len(subplot)):
-                    title_j = ""
-                    if title == "" and gaussians:
-                        title_j = '\n'.join("{}".format(gau[4:-1]) for gau in gaussians[j + i * columns])
-                    elif len(title) > j + i * columns:
-                        title_j = title[j + i * columns]
-                    plot_image(axes[j], subplot[j], gaussians[j + i * columns], sub_sums[j], colors, color_space,
-                               contour_lines_method,
-                               contour_lines_weighted,
-                               title_j,
-                               with_axis,
-                               num_of_levels,
-                               borders,
-                               linewidth_contour)
-                    logger.debug(gaussians[0][0])
-                    axes[j].set_xlim([gaussians[j + i * columns][0][0], gaussians[j + i * columns][0][1]])
-                    axes[j].set_ylim([gaussians[j + i * columns][0][2], gaussians[j + i * columns][0][3]])
-                    axes[j].set_aspect('equal', 'box')
-            fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
-
-
-def plot_image(axis, cross_lines, gaussians, z_sum, colors, color_space="lab",
-               contour_lines_method="equal_density",
-               contour_lines_weighted=True, title="", with_axis=True,
-               num_of_levels=6, borders=None, linewidth=2,
-               contour_lines_colorscheme=color_schemes.get_background_colorbrewer_scheme()):
-    logger.debug("gaussians: {}".format(gaussians))
-    for cross in cross_lines:
-        generate_cross(axis, *cross[:4])
-    fill_between_lines(axis, cross_lines, color_space=color_space)
-    picture_worker.generate_contour_lines(axis, z_sum, gaussians[0], contour_lines_colorscheme,
-                                          contour_lines_method,
-                                          contour_lines_weighted, num_of_levels, borders, linewidth)
-
-
 def filter_order_list(list_1, idx):
     return [list_1[i] for i in idx]
-    # return list(collections.OrderedDict.fromkeys(list_1))
 
 
 def filter_order_color(list_1):
@@ -195,13 +117,13 @@ def get_fill_regions(cross_lines, int_condition=1000):
 
 
 def mix_colors(colors, z_weights, color_space="lab"):
-    color = picture_worker.convert_color_to_colorspace(colors[0], color_space)
+    color = convert_color_to_colorspace(colors[0], color_space)
     z_weights = sorted(list(zip(z_weights, colors)), key=lambda x: x[0])
     z_weight = z_weights[0][0]
     for z_wei, col in z_weights:
-        col = picture_worker.convert_color_to_colorspace(col, color_space)
+        col = convert_color_to_colorspace(col, color_space)
         color, z_weight = hierarchic_blending_operator.porter_duff_source_over(color, z_weight, col, z_wei)
-    return picture_worker.convert_color_to_rgb(color, color_space)
+    return convert_color_to_rgb(color, color_space)
 
 
 def fill_between_lines(axis, cross_lines, color_space="lab"):
@@ -224,7 +146,7 @@ def generate_line(axis, line, color_points=None, borders=None):
         contour_lines_colorscheme = color_schemes.get_colorbrewer_schemes()[0]
         color_points = contour_lines_colorscheme["colorscheme"](
             contour_lines_colorscheme["colorscheme_name"],
-            picture_worker.norm_levels(np.linspace(0, 1, len(line) - 1), *borders), lvl_white=0)
+            picture_contours.norm_levels(np.linspace(0, 1, len(line) - 1), *borders), lvl_white=0)
     points = np.array(list(zip(line[:-1], line[1:])))
     logger.debug("Points: {}".format(points))
     for j, i in enumerate(points):
@@ -281,7 +203,7 @@ def get_color(iso_level, colorscheme, level_white=0):
 def get_line(gaussian, x_list, y_list, z_list, eigenvalue, eigenvector, colorscheme, min_value=0., max_value=1.,
              method="equal_density",
              num_of_levels=5):
-    iso_level = picture_worker.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels)
+    iso_level = picture_contours.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels)
     first_line, second_line = get_half_lines(gaussian.means, eigenvector, eigenvalue)
     logger.debug("------------------------------------------------------------")
     logger.debug("First Part of Line {}".format(first_line))
@@ -289,8 +211,8 @@ def get_line(gaussian, x_list, y_list, z_list, eigenvalue, eigenvector, colorsch
     logger.debug("------------------------------------------------------------")
     first_line = split_half_line(*first_line, iso_level, x_list, y_list, z_list)
     second_line = split_half_line(*second_line, iso_level[::-1], x_list, y_list, z_list)
-    iso_lvl = picture_worker.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels + 2)
-    iso_lvl = picture_worker.get_color_middlepoint(iso_lvl, min_value, max_value)
+    iso_lvl = picture_contours.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels + 2)
+    iso_lvl = picture_contours.get_color_middlepoint(iso_lvl, min_value, max_value)
     colors = get_color(iso_lvl, colorscheme)
     return [*first_line, *second_line[1:]], [*colors, *colors[::-1]], [*iso_lvl, *iso_lvl[::-1]]
 
@@ -304,7 +226,7 @@ def generate_rectangle_from_line(line, eigenvector, length):
 
 
 def get_cross(gaussian: Gaussian, colorscheme, min_value=0., max_value=1., length=3, *args, **kwargs):
-    picture_worker.check_constrains(min_value, max_value)
+    picture_contours.check_constrains(min_value, max_value)
     x_list, y_list, z_list = gaussian.get_density_grid()
     eigenvalues, eigenvectors = np.linalg.eig(gaussian.cov_matrix)
     logger.debug(gaussian)
@@ -353,22 +275,9 @@ def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, length=3, b
     fill_between_lines(ax, cross_lines, color_space=color_space)
 
 
-def generate_image(gaussians, colorschemes, length=3, borders=None, *args, **kwargs):
-    if not isinstance(gaussians[0], Gaussian):
-        raise ValueError("Expected Gaussian instead got {}".format(type(gaussians[0])))
-    logger.debug(gaussians)
-    if borders is None:
-        borders = [0, 1]
-    lower_border = borders[0]
-    upper_border = borders[1]
-    z_list = helper.generate_gaussians(gaussians)
-    z_min, z_max, z_sum = helper.generate_weights(z_list)
-    z_weights = []
-    for z, colorscheme in zip(z_list, colorschemes):
-        z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
-        z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
-        z_weights.append([z_min_weight, z_max_weight])
-    return z_list, [
-        get_cross(i, j, *k, length, *args, **kwargs) for i, j, k
-        in
-        zip(gaussians, colorschemes, z_weights)], z_sum
+def convert_color_to_rgb(color, color_space="lab"):
+    return _convert_color_space_to_rgb(np.array([[color]]), color_space)[0][0]
+
+
+def convert_color_to_colorspace(color, color_space="lab"):
+    return _convert_rgb_image(np.array([[color]]), color_space)[0][0]

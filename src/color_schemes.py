@@ -255,7 +255,7 @@ def __convert_startcolor(startcolor):
     return rgb
 
 
-def matplotlib_colorschemes(colorscheme_name, levels, lvl_white=1, verbose=False):
+def matplotlib_colorschemes(colorscheme_name, levels, lvl_white=1):
     """
     Generates a colorscheme from matplotlib
 
