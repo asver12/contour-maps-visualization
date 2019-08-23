@@ -12,6 +12,7 @@
 #
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
@@ -28,16 +29,21 @@ release = '1.0.0'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
+extensions = ['recommonmark',
+              'sphinx.ext.autodoc',
               'sphinx.ext.imgmath',
               'sphinx.ext.viewcode',
-              'sphinx.ext.githubpages',
-              'recommonmark']
+              'sphinx.ext.githubpages']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
-source_suffix = ['.rst', '.md']
+source_suffix = [".rst", ".md"]
+# source_suffix = {
+#     '.rst': 'restructuredtext',
+#     '.txt': 'markdown',
+#     '.md': 'markdown',
+# }
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -56,12 +62,11 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-
 # add git repository
 html_context = {
-    "display_github": True, # Integrate GitHub
-    "github_user": "asver12", # Username
-    "github_repo": "contour-maps-visualisation", # Repo name
-    "github_version": "master", # Version
-    "conf_py_path": "/docs/", # Path in the checkout to the docs root
+    "display_github": True,  # Integrate GitHub
+    "github_user": "asver12",  # Username
+    "github_repo": "contour-maps-visualisation",  # Repo name
+    "github_version": "sphinx-documentation",  # Version
+    "conf_py_path": "/docs/",  # Path in the checkout to the docs root
 }
