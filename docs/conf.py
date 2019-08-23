@@ -15,6 +15,9 @@ import sys
 
 sys.path.insert(0, os.path.abspath('..'))
 
+# if not os.path.exists("src"):
+#     os.symlink("..", "src")
+
 # -- Project information -----------------------------------------------------
 
 project = 'Contour-maps-visualisation'
