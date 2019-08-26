@@ -3,12 +3,16 @@ import os
 from numpy.ctypeslib import ndpointer
 import numpy as np
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 try:
     local_dir = os.path.dirname(__file__)
-    lib = cdll.LoadLibrary(local_dir + "/../libs/libblendingOperators.so")
+    lib = cdll.LoadLibrary(local_dir + "/libs/libblendingOperators.so")
 except OSError as e:
-    print("File libsvmBlend.so could not be found under {}".format(
-        os.path.dirname(__file__) + "/../libs/libblendingOperators.so"))
+    logger.warn("File libsvmBlend.so could not be found under {}".format(
+        os.path.dirname(__file__) + "/libs/libblendingOperators.so"))
 
 array_type = c_double * 3
 

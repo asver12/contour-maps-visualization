@@ -1,13 +1,16 @@
-from ctypes import cdll, c_int, byref, c_double, POINTER, Structure, c_char
+from ctypes import cdll, c_int, c_double, POINTER, Structure, c_char
 import os
 import numpy as np
+import logging
 
+logger = logging.getLogger(__name__)
 try:
     local_dir = os.path.dirname(__file__)
-    lib = cdll.LoadLibrary(local_dir + "/../libs/libblendingOperators.so")
+    lib = cdll.LoadLibrary(local_dir + "/libs/libblendingOperators.so")
 except OSError as e:
-    print("File libsvmBlend.so could not be found under {}".format(
-        os.path.dirname(__file__) + "/../libs/libblendingOperators.so"))
+    print("okay")
+    logger.warn("File libsvmBlend.so could not be found under {}".format(
+        os.path.dirname(__file__) + "/libs/libblendingOperators.so"))
 
 dtype = np.float
 
