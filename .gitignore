@@ -3,7 +3,11 @@
 local_history.patch
 __pycache__
 
-src/cmodule/build
+# pip3 build data
+*.egg-info
+
+# c++ build data
+contour_visualization/cmodule/build
 
 # own stuff
 private
