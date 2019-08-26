@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.Distribution import Distribution
+from contour_visualization.Distribution import Distribution
 
 
 class ModelbaseDistribution(Distribution):

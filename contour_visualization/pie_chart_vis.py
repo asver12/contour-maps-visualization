@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib.patches import Wedge
 
-from src import helper, color_schemes
+from contour_visualization import helper, color_schemes
 
 import logging
 

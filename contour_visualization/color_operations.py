@@ -1,6 +1,6 @@
 import numpy as np
 
-from src import helper, color_schemes
+from contour_visualization import helper, color_schemes
 
 
 def blend_color(blending_operator, color_1, color_2, *args, **kwargs):

@@ -1,8 +1,8 @@
 import numpy as np
 from skimage import measure
 
-from src import helper
-from src.picture_contours import get_iso_levels, logger, norm_levels
+from contour_visualization import helper
+from contour_visualization.picture_contours import get_iso_levels, logger, norm_levels
 
 
 def generate_contour_lines(ax, X, gaussian, contour_lines_colorscheme, contour_lines_method="equal_density",

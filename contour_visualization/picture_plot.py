@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
-from src import pie_chart_vis, helper, picture_contours, color_schemes, hierarchic_blending_operator, picture_cross, \
+from contour_visualization import pie_chart_vis, helper, picture_contours, color_schemes, hierarchic_blending_operator, picture_cross, \
     picture_contour_lines
 
 import logging

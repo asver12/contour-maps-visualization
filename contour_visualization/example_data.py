@@ -1,7 +1,7 @@
 import copy
 
-from src import helper, color_schemes
-from src.Gaussian import Gaussian
+from contour_visualization import helper, color_schemes
+from contour_visualization.Gaussian import Gaussian
 
 
 def generate_gaussians(gaussians):

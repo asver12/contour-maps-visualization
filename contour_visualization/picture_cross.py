@@ -4,12 +4,10 @@ import scipy.ndimage
 import itertools
 import pyclipper
 
-from src import helper, picture_contours, color_schemes, hierarchic_blending_operator
+from contour_visualization import helper, picture_contours, color_schemes, hierarchic_blending_operator
+from contour_visualization.Gaussian import Gaussian
 
 import logging
-
-from src.Gaussian import Gaussian
-from src.picture_contours import _convert_color_space_to_rgb, _convert_rgb_image
 
 logger = logging.getLogger(__name__)
 
@@ -276,8 +274,8 @@ def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, length=3, b
 
 
 def convert_color_to_rgb(color, color_space="lab"):
-    return _convert_color_space_to_rgb(np.array([[color]]), color_space)[0][0]
+    return picture_contours.convert_color_space_to_rgb(np.array([[color]]), color_space)[0][0]
 
 
 def convert_color_to_colorspace(color, color_space="lab"):
-    return _convert_rgb_image(np.array([[color]]), color_space)[0][0]
+    return picture_contours.convert_rgb_image(np.array([[color]]), color_space)[0][0]

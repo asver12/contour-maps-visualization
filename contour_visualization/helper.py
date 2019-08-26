@@ -4,11 +4,11 @@ from typing import List
 import numpy as np
 from scipy.stats import multivariate_normal
 
-from src import picture_contours, color_schemes
+from contour_visualization import picture_contours, color_schemes
+from contour_visualization.Distribution import Distribution
 
 import logging
 
-from src.Distribution import Distribution
 
 logger = logging.getLogger(__name__)
 

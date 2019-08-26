@@ -2,8 +2,8 @@ import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
-from src import picture_plot
-from src.ModelbaseDistribution import ModelbaseDistribution
+from contour_visualization import picture_plot
+from contour_visualization.ModelbaseDistribution import ModelbaseDistribution
 
 import logging
 
