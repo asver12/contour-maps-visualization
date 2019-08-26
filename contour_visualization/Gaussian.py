@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import multivariate_normal
 
-from src.Distribution import Distribution
+from contour_visualization.Distribution import Distribution
 
 import logging
 

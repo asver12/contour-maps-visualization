@@ -1,4 +1,4 @@
-from src import ddhp_color_blending
+from contour_visualization import ddhp_color_blending
 
 
 def porter_duff_source_over(color_1, z_1, color_2, z_2):

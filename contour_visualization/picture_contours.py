@@ -2,12 +2,12 @@ import numpy as np
 from skimage import color
 
 import logging
+from contour_visualization import color_operations, hierarchic_blending_operator, helper, c_picture_worker
+from density_visualization import iso_levels
 
 logger = logging.getLogger(__name__)
 
-from src import color_operations, hierarchic_blending_operator, helper, c_picture_worker
 
-from density_visualization import iso_levels
 
 
 def check_constrains(min_value, max_value):
@@ -75,7 +75,7 @@ def get_colorgrid(X, colorscheme, method="equal_density", num_of_levels=8, min_v
     return color_operations.map_colors(X, colormap, levels, split)
 
 
-def _convert_rgb_image(img, color_space):
+def convert_rgb_image(img, color_space):
     """
     converts rgb-image into a given color-space. If the rgb-image is in rgba its converted to rgb.
 
@@ -96,7 +96,7 @@ def _convert_rgb_image(img, color_space):
     return img
 
 
-def _convert_color_space_to_rgb(img, color_space):
+def convert_color_space_to_rgb(img, color_space):
     """
     converts image of given color-space into a rgb-image.
 
@@ -207,7 +207,7 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
     :param kwargs:
     :return:
     """
-    images = [_convert_rgb_image(np.asarray(img), None) for img in images]
+    images = [convert_rgb_image(np.asarray(img), None) for img in images]
     if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
         import time
         start = time.time()
@@ -221,10 +221,10 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
             end = time.time()
             logger.debug("{}s elapsed".format(end - start))
         return reduce, z_new
-    images = [_convert_rgb_image(np.asarray(img), None) for img in images]
+    images = [convert_rgb_image(np.asarray(img), None) for img in images]
     if any(img.ndim != 3 for img in images):
         raise Exception("Images need a dimension of 3")
-    np_images = [_convert_rgb_image(img, color_space) for img in images]
+    np_images = [convert_rgb_image(img, color_space) for img in images]
     logger.debug(np_images)
     logger.debug(images)
     z_new = np.zeros([len(images[0]), len(images[0][0]), 1])
@@ -251,13 +251,13 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
                     }
                     if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
                         reduce_befor = reduce[i][j].copy()
-                        logger.debug(_convert_color_space_to_rgb([[reduce[i][j]]], color_space)[0][0])
+                        logger.debug(convert_color_space_to_rgb([[reduce[i][j]]], color_space)[0][0])
                     # Select between three cases:
                     # 1: both pixel are not white, use blending_operator
                     # 2: first pixel is white, use second
                     # 3: second pixel is white, use first
                     reduce[i][j], z_new[i][j] = switch.get(
-                        _check_if_mixable(_convert_color_space_to_rgb([[reduce[i][j]]], color_space)[0][0],
+                        _check_if_mixable(convert_color_space_to_rgb([[reduce[i][j]]], color_space)[0][0],
                                           images[sorted_values[k][0]][i][j]))
 
                     if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
@@ -268,7 +268,7 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
                                                                              z_new[i][j],
                                                                              z_values[sorted_values[k][0]][i][j],
                                                                              z_new[i][j]))
-    reduce = _convert_color_space_to_rgb(reduce, color_space)
+    reduce = convert_color_space_to_rgb(reduce, color_space)
     if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
         end = time.time()
         logger.debug("{}s elapsed".format(end - start))

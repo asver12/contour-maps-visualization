@@ -1,4 +1,4 @@
-from src import color_schemes, picture_plot
+from contour_visualization import color_schemes, picture_plot
 
 
 def plot_images(gaussians, contour_line_colorscheme=color_schemes.get_colorbrewer_schemes(),
