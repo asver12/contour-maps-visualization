@@ -11,3 +11,8 @@ contour_visualization/cmodule/build
 
 # own stuff
 private
+
+
+# Sphinx documentation
+docs/_build/
+docs/src
