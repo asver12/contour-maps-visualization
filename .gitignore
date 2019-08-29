@@ -16,3 +16,5 @@ private
 # Sphinx documentation
 docs/_build/
 docs/src
+
+*.html

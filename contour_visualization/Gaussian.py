@@ -56,7 +56,7 @@ class Gaussian(Distribution):
         pos = np.empty(x.shape + (2,))
         pos[:, :, 0] = x
         pos[:, :, 1] = y
-        return x, y, self.gau.pdf(pos)
+        return x, y, self.weight * self.gau.pdf(pos)
 
     def get_attributes(self):
         return [self.x_min, self.x_max, self.y_min, self.y_max, self.means, self.cov_matrix, self.weight, self.size]
