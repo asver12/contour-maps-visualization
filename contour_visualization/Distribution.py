@@ -12,10 +12,26 @@ class Distribution(ABC):
 
     @abstractmethod
     def get_density(self, x):
+        """
+        Returns the density of the distribution at a given point x = (x,y)
+
+        :param x: (x,y)-coordinates
+        :return: z-coordinates
+        """
         pass
 
     @abstractmethod
     def get_density_grid(self, size=None, x_min=None, x_max=None, y_min=None, y_max=None):
+        """
+        returns the density on a grid given by each endpoint. The grid is uniform.
+
+        :param size: number of points per row and column
+        :param x_min: start of x-axis
+        :param x_max: end of x-axis
+        :param y_min: start of y-axis
+        :param y_max: end of y-axis
+        :return: grid with size = size*size from x_min to x_max and y_min to y_max
+        """
         pass
 
     def get_attributes(self):
