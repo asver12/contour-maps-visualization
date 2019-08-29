@@ -160,10 +160,7 @@ def find_index(number, levels, verbose=False):
     start = 0
     end = len(levels) - 1
     logger.debug("Number: {}".format(number))
-    logger.debug("Level: ", end=" ")
-    for i in levels:
-        logger.debug(i, end=", ")
-    logger.debug("")
+    logger.debug("Level: [{}]".format(", ".join([str(i) for i in levels])))
     if number < levels[start]:
         return 0
     if number > levels[end]:

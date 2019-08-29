@@ -3,8 +3,24 @@ contour-maps-visualisation
 
 Objective
 ---------
-Objective of this project is to find a appealing representation of multiple 2D-distribution where a third categorical variable is set. This should happen in a 2D-Cartesian coordinate system where the x- and y-axis represent the variables of the distribution. f(x,y) and the categorical variable is represented through the color. In detail it is your goal to make it optical possible to distinguish two overlapping distributions and be able to tell which one lays on top and which one lays on bottom. This should also be possible for more then two distributions overlapping each other.
+This library offers a way to visualize multiple 2D-distribution where each distribution has one categorical variable.
+It tries in particular to help the viewer to achieve a better understanding of the distributions.
+It ships with three types of visualizations:
 
+
+.. image:: images/contour_img.png
+    :scale: 50 %
+    :width: 30%
+
+.. image:: images/crosses.png
+    :scale: 50 %
+    :width: 30%
+
+.. image:: images/pie_chart.png
+    :scale: 50 %
+    :width: 30%
+
+where each can be used with the others as pleased. There are four tiypes of visualizations in total. Contours, contour-lines, crosses and pie-charts.
 
 Process
 -------

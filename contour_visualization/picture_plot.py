@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
-from contour_visualization import pie_chart_vis, helper, picture_contours, color_schemes, hierarchic_blending_operator, picture_cross, \
+from contour_visualization import pie_chart_vis, helper, picture_contours, color_schemes, hierarchic_blending_operator, \
+    picture_cross, \
     picture_contour_lines
 
 import logging
@@ -143,7 +144,8 @@ def plot_image(ax, gaussians,
               loc='upper left', frameon=False)
     if contours:
         if isinstance(contour_colorscheme, dict):
-            picture_contours.input_image(ax, [gaussians[0]], [z_sum], np.min(z_sum), np.max(z_sum), [contour_colorscheme],
+            picture_contours.input_image(ax, [gaussians[0]], [z_sum], np.min(z_sum), np.max(z_sum),
+                                         [contour_colorscheme],
                                          contour_method,
                                          contour_lvl, color_space, use_c_implementation, use_alpha_sum,
                                          blending_operator=blending_operator, borders=contour_borders)
@@ -157,7 +159,8 @@ def plot_image(ax, gaussians,
         if isinstance(contour_line_colorscheme, dict):
             picture_contour_lines.generate_contour_lines(ax, z_sum, gaussians[0], contour_line_colorscheme,
                                                          contour_lines_method,
-                                                         contour_lines_weighted, contour_line_level, contour_line_borders,
+                                                         contour_lines_weighted, contour_line_level,
+                                                         contour_line_borders,
                                                          linewidth)
         else:
             for z_values, scheme in zip(z_list, contour_line_colorscheme):
