@@ -151,7 +151,7 @@ def plot_image(ax, distributions,
                     [[contour_line_colorscheme, ] if isinstance(contour_line_colorscheme,
                                                                 dict) else contour_line_colorscheme,
                      [contour_colorscheme, ] if isinstance(contour_colorscheme, dict) else contour_colorscheme,
-                     pie_chart_colors], len(distributions)), pie_chart_colors], len(distributions)))
+                     pie_chart_colors], len(distributions)), pie_chart_colors], len(distributions)))[:len(distributions)]
         _generate_legend(ax, legend_colors, legend_names, legend_lw=legend_lw)
     if contours:
         if isinstance(contour_colorscheme, dict):
@@ -189,6 +189,7 @@ def plot_image(ax, distributions,
 
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
+    print(colors)
     if names is None:
         names = [i for i in range(len(colors))]
     custom_lines = [Line2D([0], [0], color=colors[i], lw=legend_lw) for i in

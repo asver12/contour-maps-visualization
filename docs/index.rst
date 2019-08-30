@@ -13,6 +13,7 @@ Contents
     contour_visualization
     cross_visualization
     piechart_visualization
+    contour_lines
     reversed_vis
     example_data
 
