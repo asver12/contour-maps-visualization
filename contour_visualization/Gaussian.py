@@ -9,6 +9,12 @@ logger = logging.getLogger(__name__)
 
 
 def get_gaussian_from_list(dist_list):
+    """
+    creates a gaussian-distribution by an array of values
+
+    :param dist_list: [x_min, x_max, y_min, y_max, means, cov_matrix, size]
+    :return: Gaussian
+    """
     if len(dist_list) == 7:
         return Gaussian(x_min=dist_list[0],
                         x_max=dist_list[1],
@@ -22,7 +28,17 @@ def get_gaussian_from_list(dist_list):
 
 
 class Gaussian(Distribution):
+    """
+    Generates a multivariate normal distribution of dimension 2.
+    """
     def __init__(self, means=None, cov_matrix=None, *args, **kwargs):
+        """
+        Generates a multivariate normal distribution of dimension 2.
+        Rest can be set like in the abstract distribution class
+
+        :param means: means / expectations of the distribution
+        :param cov_matrix: covariance matrix of the distribution
+        """
         super().__init__(*args, **kwargs)
 
         if means is None:

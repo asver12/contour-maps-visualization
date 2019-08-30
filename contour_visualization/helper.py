@@ -96,7 +96,7 @@ def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, 
     return get_gaussian(x_min, x_max, y_min, y_max, [mu_x_1, mu_y_1], cov, size)
 
 
-def generate_distributions(distributions: List[Distribution]):
+def generate_distribution_grids(distributions: List[Distribution]):
     return [distribution.get_density_grid()[2] for distribution in distributions]
 
 

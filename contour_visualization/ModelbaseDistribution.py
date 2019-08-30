@@ -1,11 +1,29 @@
+import pickle
+
 import numpy as np
 
 from contour_visualization.Distribution import Distribution
 
 
 class ModelbaseDistribution(Distribution):
+    """
+    Integrates a models from `Lumen <https://github.com/lumen-org>`__
+    """
     def __init__(self, model, used_categorical_name, categorical_attribute, attributes, *args, **kwargs):
+        """
+        Integrates a models from `Lumen <https://github.com/lumen-org>`__
+
+        :param model: for lumen created model or path to model
+        :param used_categorical_name: categoris which are wanted to use
+        :param categorical_attribute: specific name of this distribution inside of the categori
+        :param attributes: other attributes which are needed. For the visualizations to work give 2
+        """
         super().__init__(*args, **kwargs)
+        if isinstance(model, str):
+            try:
+                pickle.load(open("../../fitted_models/mcg_iris_map.mdl", "rb"))
+            except Exception as e:
+                raise e
         self.used_categorical_name = used_categorical_name
         self.model = model
         self.model.marginalize(keep=[categorical_attribute, *attributes])
@@ -14,10 +32,8 @@ class ModelbaseDistribution(Distribution):
             min_values = self.model.data[attributes].min()
             max_values = self.model.data[attributes].max()
         else:
-            min_values = self.x_min, self.y_min
-            max_values = self.x_max, self.y_max
-            # max_values = self.model.data[self.model.data[categorical_attribute] == used_categorical_name][attributes].max()
-            # min_values = self.model.data[self.model.data[categorical_attribute] == used_categorical_name][attributes].min()
+            min_values = kwargs["x_min"], kwargs["y_min"]
+            max_values = kwargs["x_max"], kwargs["y_max"]
         self.x_min = min_values[0] - abs(max_values[0] - min_values[0]) * 0.2
         self.x_max = max_values[0] + abs(max_values[0] - min_values[0]) * 0.2
         self.y_min = min_values[1] - abs(max_values[1] - min_values[1]) * 0.2

@@ -1,5 +1,5 @@
-Distribution
-============
+Distributions
+=============
 
 A distribution is used to provide an interface for the visualization tools to work with.
 Each distribution must have a density function and implement all abstract methods given in the distribution class.
@@ -12,9 +12,14 @@ This package ships with two types of distributions.
 A gaussian distribution and a wrapper for the `Lumen <https://github.com/lumen-org>`__ distributions.
 The gaussian distribution has a covariance matrix and therefor can be used to generate cross-plots.
 
+.. autoclass:: contour_visualization.Gaussian.Gaussian
+    :noindex:
+
+.. autoclass:: contour_visualization.ModelbaseDistribution.ModelbaseDistribution
+    :noindex:
+
+
 To generate your own distribution let it inherit from the Distribution class and implement all abstract methods.
-
-
 
 .. code-block:: python
 

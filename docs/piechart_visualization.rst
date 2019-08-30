@@ -1,2 +1,2 @@
-Pie-chart Visualization
+Pie-chart-visualization
 =======================

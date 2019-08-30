@@ -40,7 +40,7 @@ def generate_four_moving_gaussians(x_min=-10, x_max=10, y_min=-10, y_max=10, siz
                                     cov_matrix=cov_matrix,
                                     weight=weights[3])
         logger.info(" \n ".join(str(i) for i in int_gaussians))
-        z_list = helper.generate_distributions(int_gaussians)
+        z_list = helper.generate_distribution_grids(int_gaussians)
         z_min, z_max, z_sum = helper.generate_weights(z_list)
         z_lists.append(z_list)
         z_sums.append(z_sum)
