@@ -1,12 +1,18 @@
+import sys
 import numpy as np
 from skimage import color
 
 import logging
-from contour_visualization import color_operations, hierarchic_blending_operator, helper, c_picture_worker, \
-    color_schemes
-from density_visualization import iso_levels
 
 logger = logging.getLogger(__name__)
+
+from contour_visualization import color_operations, hierarchic_blending_operator, helper, c_picture_worker, \
+    color_schemes
+
+try:
+    from density_visualization import iso_levels
+except ImportError as e:
+    logger.warn(e)
 
 
 def check_constrains(min_value, max_value):
@@ -22,22 +28,29 @@ def check_constrains(min_value, max_value):
         raise Exception("{} is not accepted as maximum value".format(max_value))
 
 
-def get_iso_levels(X, method="equal_density", num_of_levels=8):
+def get_iso_levels(x, method="equal_density", num_of_levels=8):
     """
     generates iso-lines to a given 2D-array
 
-    :param X: picture to generate iso-levels to
+    :param x: picture to generate iso-levels to
     :param method: normal or equal_density available right now
     :param num_of_levels: number of iso-lines to generate
     :return: array([iso_line_1, ... , iso_line_n ])
     """
+    if "density_visualization.iso_levels" not in sys.modules:
+        logger.info("module density_visualization.iso_levels is missing. Normal iso-levels have been used")
+        return normal_iso_level(x, num_of_levels)
     if method == "equal_density":
-        return iso_levels.equi_prob_per_level(X, k=num_of_levels)
+        return iso_levels.equi_prob_per_level(x, k=num_of_levels)
     elif method == "equal_horizontal":
-        return iso_levels.equi_horizontal_prob_per_level(X, k=num_of_levels)
+        return iso_levels.equi_horizontal_prob_per_level(x, k=num_of_levels)
     elif method == "equal_value":
-        return iso_levels.equi_value(X, k=num_of_levels)
-    return np.linspace(np.min(X), np.max(X), num_of_levels + 2)[1:-1]
+        return iso_levels.equi_value(x, k=num_of_levels)
+    return normal_iso_level(x, num_of_levels)
+
+
+def normal_iso_level(x, num_of_levels):
+    return np.linspace(np.min(x), np.max(x), num_of_levels + 2)[1:-1]
 
 
 def norm_levels(interval_array, new_min_value=0., new_max_value=1., old_min=None, old_max=None):

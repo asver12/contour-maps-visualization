@@ -1,6 +1,14 @@
+import copy
 import pickle
+import logging
 
+logger = logging.getLogger(__name__)
 import numpy as np
+
+try:
+    import mb_modelbase
+except Exception as e:
+    logger.warn(e)
 
 from contour_visualization.Distribution import Distribution
 
@@ -9,6 +17,7 @@ class ModelbaseDistribution(Distribution):
     """
     Integrates a models from `Lumen <https://github.com/lumen-org>`__
     """
+
     def __init__(self, model, used_categorical_name, categorical_attribute, attributes, *args, **kwargs):
         """
         Integrates a models from `Lumen <https://github.com/lumen-org>`__
@@ -21,11 +30,14 @@ class ModelbaseDistribution(Distribution):
         super().__init__(*args, **kwargs)
         if isinstance(model, str):
             try:
-                pickle.load(open("../../fitted_models/mcg_iris_map.mdl", "rb"))
+                # import mb_modelbase
+                # Model.load()
+                model = pickle.load(open(model, "rb"))
             except Exception as e:
                 raise e
+        self.categorical_attribute = categorical_attribute
         self.used_categorical_name = used_categorical_name
-        self.model = model
+        self.model = copy.deepcopy(model)
         self.model.marginalize(keep=[categorical_attribute, *attributes])
         self.vec_density = np.vectorize(self.get_density_wrapper, signature="(),()->()")
         if "x_min" not in kwargs.keys():
@@ -56,7 +68,7 @@ class ModelbaseDistribution(Distribution):
         pos = np.empty(x.shape + (2,))
         pos[:, :, 0] = x
         pos[:, :, 1] = y
-        return x_list, y_list, self.vec_density(x=x, y=y)
+        return x, y, self.vec_density(x=x, y=y)
 
     def get_density_wrapper(self, x, y):
         return self.model.density([self.used_categorical_name, x, y])

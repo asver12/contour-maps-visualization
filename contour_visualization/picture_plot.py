@@ -125,7 +125,7 @@ def plot_image(ax, distributions,
     :return:
     """
 
-    if contours or contour_lines or pie_charts:
+    if contours or contour_lines or pie_charts or crosses:
         z_list = helper.generate_distribution_grids(distributions)
         z_min, z_max, z_sum = helper.generate_weights(z_list)
 
@@ -189,7 +189,6 @@ def plot_image(ax, distributions,
 
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
-    print(colors)
     if names is None:
         names = [i for i in range(len(colors))]
     custom_lines = [Line2D([0], [0], color=colors[i], lw=legend_lw) for i in
