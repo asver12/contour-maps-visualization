@@ -55,7 +55,7 @@ def get_distance_ratio(num_of_pies_x, x_values, y_values):
     return int(num_of_pies_x * (abs(y_values[1] - y_values[0]) / abs(x_values[1] - x_values[0])))
 
 
-def input_image(ax, gaussian, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, angle=0, set_limit=False,
+def input_image(ax, distribution, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, angle=0, set_limit=False,
                 colorschemes=color_schemes.get_colorbrewer_schemes(),
                 modus="light", borders=None):
     if borders is None:
@@ -64,20 +64,20 @@ def input_image(ax, gaussian, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, a
         else:
             borders = [.2, .9]
     if set_limit:
-        ax.set_xlim([helper.get_x_values(gaussian)])
-        ax.set_ylim([helper.get_y_values(gaussian)])
+        ax.set_xlim([helper.get_x_values(distribution)])
+        ax.set_ylim([helper.get_y_values(distribution)])
     if num_of_pies_y == 0:
-        num_of_pies_y = get_distance_ratio(num_of_pies_x, helper.get_x_values(gaussian), helper.get_y_values(gaussian))
-    container, distances = container_size(*helper.get_x_values(gaussian),
-                                          *helper.get_y_values(gaussian),
+        num_of_pies_y = get_distance_ratio(num_of_pies_x, helper.get_x_values(distribution), helper.get_y_values(distribution))
+    container, distances = container_size(*helper.get_x_values(distribution),
+                                          *helper.get_y_values(distribution),
                                           num_of_pies_x,
                                           num_of_pies_y)
     for k in container[0][0]:
         for l in container[1]:
             middle_point = k, l[0]
             input_values = []
-            for j in range(len(gaussian)):
-                input_values.append(gaussian[j].get_density(middle_point))
+            for j in range(len(distribution)):
+                input_values.append(distribution[j].get_density(middle_point))
             new_ratio = helper.normalize_array(input_values, min(input_values), max(input_values), 0, 1)
             if new_ratio is not None:
                 new_ratio = np.asarray(input_values) / len(input_values)

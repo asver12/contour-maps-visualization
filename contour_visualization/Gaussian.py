@@ -1,3 +1,5 @@
+from math import sqrt
+
 import numpy as np
 from scipy.stats import multivariate_normal
 
@@ -8,7 +10,27 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def learn_gaussian_from_model(model):
+    if hasattr(model.model, "data"):
+        mean = np.mean(
+            model.model.data.loc[model.model.data[model.categorical_attribute] == model.used_categorical_name].loc[:,
+            model.model.data.columns != 'species'].values, axis=0)
+        cov = np.cov(
+            model.model.data.loc[model.model.data[model.categorical_attribute] == model.used_categorical_name].loc[:,
+            model.model.data.columns != 'species'].values, rowvar=False)
+        logger.debug("Mean: {}".format(mean))
+        logger.debug("Cov-matrix: {}".format(cov))
+        return Gaussian(means=mean,
+                        cov_matrix=cov)
+
+
 def get_gaussian_from_list(dist_list):
+    """
+    creates a gaussian-distribution by an array of values
+
+    :param dist_list: [x_min, x_max, y_min, y_max, means, cov_matrix, size]
+    :return: Gaussian
+    """
     if len(dist_list) == 7:
         return Gaussian(x_min=dist_list[0],
                         x_max=dist_list[1],
@@ -22,19 +44,44 @@ def get_gaussian_from_list(dist_list):
 
 
 class Gaussian(Distribution):
+    """
+    Generates a multivariate normal distribution of dimension 2.
+    """
+
     def __init__(self, means=None, cov_matrix=None, *args, **kwargs):
+        """
+        Generates a multivariate normal distribution of dimension 2.
+        Rest can be set like in the abstract distribution class
+
+        :param means: means / expectations of the distribution
+        :param cov_matrix: covariance matrix of the distribution
+        """
         super().__init__(*args, **kwargs)
 
         if means is None:
             means = [0, 0]
+            logger.warn("No means defined using default {}".format(means))
+        elif len(means) != 2:
+            raise ValueError("len({}) != 2".format(means))
         self.means = means
 
         if cov_matrix is None:
             cov_matrix = [[1, 0], [0, 1]]
+            logger.warn("No covariance-matrix defined. Using default {}".format(cov_matrix))
+        elif len(cov_matrix) != 2 and any([len(cov_matrix[i]) != 2 for i in [0, 1]]):
+            raise ValueError("{}.shape != (2,2)".format(cov_matrix))
         self.cov_matrix = cov_matrix
-
         self.gau = multivariate_normal(self.means, self.cov_matrix)
-        logger.debug(self)
+        if "x_min" not in kwargs.keys():
+            min_values = -5 * sqrt(cov_matrix[0][0]) + means[0], -5 * sqrt(cov_matrix[1][1]) + means[1]
+            max_values = 5 * sqrt(cov_matrix[0][0]) + means[0], 5 * sqrt(cov_matrix[1][1]) + means[1]
+        else:
+            min_values = kwargs["x_min"], kwargs["y_min"]
+            max_values = kwargs["x_max"], kwargs["y_max"]
+        self.x_min = min_values[0]
+        self.x_max = max_values[0]
+        self.y_min = min_values[1]
+        self.y_max = max_values[1]
 
     def get_density(self, x):
         return self.weight * self.gau.pdf(x)

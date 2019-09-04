@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 from matplotlib.patches import Polygon
 import scipy.ndimage
@@ -153,19 +155,50 @@ def generate_line(axis, line, color_points=None, borders=None):
                                fill=True, edgecolor=color_points[j], facecolor=color_points[j], aa=True, linewidth=0.))
 
 
-def get_half_lines(middlepoint, direction, length, verb=True):
+def get_half_lines(middlepoint, direction, length):
     startpoint = middlepoint[0] - direction[1] * length, middlepoint[1] - direction[0] * length
     endpoint = middlepoint[0] + direction[1] * length, middlepoint[1] + direction[0] * length
 
     return (startpoint, middlepoint), (middlepoint, endpoint)
 
 
-def split_half_line(startpoint, endpoint, iso_level, x_list, y_list, z_list):
+def checkpoint_constrains(startpoint, endpoint, x_list, y_list):
+    if (not x_list[0][0] <= startpoint[0] <= x_list[0][-1]) or (not x_list[0][0] <= endpoint[0] <= x_list[0][-1]):
+        raise ValueError("Point {} not in Intervall {} for x-value".format((startpoint[0], endpoint[0]),
+                                                                           (x_list[0][0], x_list[0][-1])))
+    if (not y_list[:, 0][0] <= startpoint[1] <= y_list[:, 0][-1]) or \
+            (not y_list[:, 0][0] <= endpoint[1] <= y_list[:, 0][-1]):
+        raise ValueError("Point {} not in Intervall {} for y-value".format((startpoint[1], endpoint[1]),
+                                                                           (y_list[:, 0][0], y_list[:, 0][-1])))
+
+
+def split_half_line(gaussian, startpoint, endpoint, iso_level, x_list, y_list, z_list):
     num = 100
-    index_start_x = helper.find_index(startpoint[1], x_list[0].flatten())
-    index_start_y = helper.find_index(startpoint[0], y_list[:, 0].flatten())
-    index_end_x = helper.find_index(endpoint[1], x_list[0].flatten())
-    index_end_y = helper.find_index(endpoint[0], y_list[:, 0].flatten())
+    logger.debug("Startpoint: {}".format(startpoint))
+    logger.debug("Endpoint: {}".format(endpoint))
+
+    try:
+        checkpoint_constrains(startpoint, endpoint, x_list, y_list)
+    except ValueError:
+        def ranges(startpoint, endpoint, index):
+            return min(startpoint[index], endpoint[index]) - abs(endpoint[index] - startpoint[index]) * 0.1, max(
+                startpoint[index], endpoint[index]) + abs(
+                endpoint[index] - startpoint[index]) * 0.1
+
+        x_min, x_max = ranges(startpoint, endpoint, 0)
+        y_min, y_max = ranges(startpoint, endpoint, 1)
+        x_list, y_list, z_list = gaussian.get_density_grid(x_min=x_min, x_max=x_max,
+                                                           y_min=y_min, y_max=y_max, size=200)
+        try:
+            checkpoint_constrains(startpoint, endpoint, x_list, y_list)
+        except ValueError as e:
+            raise e
+    index_start_x = helper.find_index(startpoint[0], x_list[0].flatten())
+    index_start_y = helper.find_index(startpoint[1], y_list[:, 0].flatten())
+    index_end_x = helper.find_index(endpoint[0], x_list[0].flatten())
+    index_end_y = helper.find_index(endpoint[1], y_list[:, 0].flatten())
+    logger.debug("X-index: {}".format((index_start_x, index_end_x)))
+    logger.debug("Y-index: {}".format((index_start_y, index_end_y)))
     x, y = np.linspace(index_start_x, index_end_x, num), np.linspace(index_start_y, index_end_y, num)
 
     # fehlerhaft???
@@ -189,7 +222,11 @@ def split_half_line(startpoint, endpoint, iso_level, x_list, y_list, z_list):
                 best_match = z
                 point = used_points[j]
                 start_point += j + 1
-        split_points.append(point)
+        if point:
+            split_points.append(point)
+        else:
+            logger.warn("points in grid of z-coordinates to similar")
+    logger.debug("Line: {}".format([startpoint, *split_points, endpoint]))
     return [startpoint, *split_points, endpoint]
 
 
@@ -198,48 +235,98 @@ def get_color(iso_level, colorscheme, level_white=0):
         colorscheme["colorscheme_name"], iso_level, lvl_white=level_white)
 
 
-def get_line(gaussian, x_list, y_list, z_list, eigenvalue, eigenvector, colorscheme, min_value=0., max_value=1.,
+def get_line(gaussian, eigenvalue, eigenvector, colorscheme, min_value=0., max_value=1.,
              method="equal_density",
              num_of_levels=5):
+    """
+    generates a line with matching colors and iso-lines from a given gaussian and a fitting grid of densities
+
+    :param gaussian: Gaussian class with means and cov-matrix
+    :param eigenvalue:
+    :param eigenvector:
+    :param colorscheme:
+    :param min_value:
+    :param max_value:
+    :param method:
+    :param num_of_levels:
+    :return:
+    """
+    x_list, y_list, z_list = gaussian.get_density_grid()
     iso_level = picture_contours.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels)
     first_line, second_line = get_half_lines(gaussian.means, eigenvector, eigenvalue)
+    logger.debug("Shape x values: ".format(x_list.shape))
+    logger.debug("Shape y values: ".format(y_list.shape))
     logger.debug("------------------------------------------------------------")
     logger.debug("First Part of Line {}".format(first_line))
     logger.debug("Second Part of Line {}".format(second_line))
     logger.debug("------------------------------------------------------------")
-    first_line = split_half_line(*first_line, iso_level, x_list, y_list, z_list)
-    second_line = split_half_line(*second_line, iso_level[::-1], x_list, y_list, z_list)
+    first_line = split_half_line(gaussian, *first_line, iso_level, x_list, y_list, z_list)
+    second_line = split_half_line(gaussian, *second_line, iso_level[::-1], x_list, y_list, z_list)
     iso_lvl = picture_contours.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels + 2)
+    logger.debug("Min/max-value: {}/{}".format(min_value, max_value))
+    logger.debug("Iso-Level: {}".format(iso_lvl))
     iso_lvl = picture_contours.get_color_middlepoint(iso_lvl, min_value, max_value)
     colors = get_color(iso_lvl, colorscheme)
     return [*first_line, *second_line[1:]], [*colors, *colors[::-1]], [*iso_lvl, *iso_lvl[::-1]]
 
 
-def generate_rectangle_from_line(line, eigenvector, length):
+def generate_rectangle_from_line(line, eigenvector, broad):
+    """
+    Splites line into two lines. The angle is given by the eigenvector. The Length defines the distance to the given line.
+    For the crosses in particular with the correct eigenvector the new two lines are orthogonal to the given one since
+    eigenvectors are orthogonal to each other
+
+    new line :  . . . . . .
+                |
+                | broad
+    old line :  . . . . . .
+                |
+                | broad
+    new line :  . . . . . .
+
+    :param line: line which is split into rectangles. [point_1, ... point_n]
+    :param eigenvector: vector which defines the angle in which the lines are split.
+    The new two lines are always parallel
+    :param broad: Distance between each new line and the given one
+    :return: list of tuple each tuple giving two points for the new lines [(line_1_1, line_2_1), ... , (line_1_n, line_2_n)]
+    """
     new_line = []
     for i in line:
-        first_point, second_point = get_half_lines(i, eigenvector, length, verb=False)
+        first_point, second_point = get_half_lines(i, eigenvector, broad)
         new_line.append((first_point[0], second_point[1]))
     return new_line
 
 
-def get_cross(gaussian: Gaussian, colorscheme, min_value=0., max_value=1., length=3, *args, **kwargs):
+def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad=3, *args, **kwargs):
+    """
+    Caculates the two rectangles with matching colors and the iso-level for a cross.
+
+    :param gaussian: Gaussdistribution with means and cov-matrix
+    :param colorscheme: colorscheme to use
+    :param min_value: minimum color-percentage to take
+    :param max_value: maximum color-percentage to take
+    :param broad: broad of the cross
+    :return:
+    """
+    if not hasattr(gaussian, "cov_matrix"):
+        raise AttributeError("[{}] property 'cov_matrix is missing".format(type(gaussian)))
+    if not hasattr(gaussian, "means"):
+        raise AttributeError("[{}] property 'mean' is missing".format(type(gaussian)))
     picture_contours.check_constrains(min_value, max_value)
-    x_list, y_list, z_list = gaussian.get_density_grid()
     eigenvalues, eigenvectors = np.linalg.eig(gaussian.cov_matrix)
-    logger.debug(gaussian)
-    logger.debug(eigenvalues)
-    logger.debug(eigenvectors)
-    line_1, colors_1, z_lvl_1 = get_line(gaussian, x_list, y_list, z_list, eigenvalues[0], eigenvectors[1], colorscheme,
+    logger.debug("Distribution: {}".format(gaussian))
+    logger.debug("Eigenvalues: {}".format(eigenvalues))
+    logger.debug("Eigenvectors: {}".format(eigenvectors))
+    line_1, colors_1, z_lvl_1 = get_line(gaussian, eigenvalues[0], eigenvectors[1], colorscheme,
                                          min_value, max_value,
                                          *args,
                                          **kwargs)
-    line_2, colors_2, z_lvl_2 = get_line(gaussian, x_list, y_list, z_list, eigenvalues[1], eigenvectors[0], colorscheme,
+    line_2, colors_2, z_lvl_2 = get_line(gaussian, eigenvalues[1], eigenvectors[0], colorscheme,
                                          min_value, max_value,
                                          *args,
                                          **kwargs)
-    rectangle_1 = generate_rectangle_from_line(line_1, eigenvectors[0], length)
-    rectangle_2 = generate_rectangle_from_line(line_2, eigenvectors[1], length)
+    rectangle_1 = generate_rectangle_from_line(line_1, eigenvectors[0], broad)
+    rectangle_2 = generate_rectangle_from_line(line_2, eigenvectors[1], broad)
     return rectangle_1, rectangle_2, colors_1, colors_2, z_lvl_1, z_lvl_2
 
 
@@ -265,8 +352,10 @@ def genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length=3, 
 
 def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, length=3, borders=None, color_space="lab", *args,
                   **kwargs):
-    if not isinstance(gaussians[0], Gaussian):
-        raise ValueError("Expected Gaussian instead got {}".format(type(gaussians[0])))
+    if not hasattr(gaussians[0], "cov_matrix"):
+        raise AttributeError("[{}] property 'cov_matrix is missing".format(type(gaussians[0])))
+    if not hasattr(gaussians[0], "means"):
+        raise AttributeError("[{}] property 'mean' is missing".format(type(gaussians[0])))
     cross_lines = genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length, borders, *args, **kwargs)
     for cross in cross_lines:
         generate_cross(ax, *cross[:4])
