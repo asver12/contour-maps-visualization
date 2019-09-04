@@ -80,6 +80,9 @@ def plot_image(ax, distributions,
                cross_borders=None,
                pie_charts=False, pie_num=10, pie_angle=90, pie_chart_colors=None, pie_chart_modus="light",
                pie_chart_borders=None,
+               pie_chart_iso_level=40,
+               pie_chart_level_to_cut=0,
+               pie_chart_contour_method="equal_density",
                legend=False,
                legend_lw=2,
                legend_colors=None,
@@ -117,6 +120,9 @@ def plot_image(ax, distributions,
     :param pie_chart_colors: Colorscheme to use. Defaults is colorbrewer
     :param pie_chart_modus: "light" or "size" if "size" global density is coded with size elif "light" through the colorscheme
     :param pie_chart_borders: [0.,1.] range of ether size or color lightness of the pies
+    :param pie_chart_iso_level:
+    :param pie_chart_level_to_cut:
+    :param pie_chart_contour_method:
     :param legend: if a legend should be plotted or not
     :param legend_lw:
     :param legend_colors: plots colors as lines to legend if not chosen defaults to contour-colors
@@ -151,7 +157,8 @@ def plot_image(ax, distributions,
                     [[contour_line_colorscheme, ] if isinstance(contour_line_colorscheme,
                                                                 dict) else contour_line_colorscheme,
                      [contour_colorscheme, ] if isinstance(contour_colorscheme, dict) else contour_colorscheme,
-                     pie_chart_colors], len(distributions)), pie_chart_colors], len(distributions)))[:len(distributions)]
+                     pie_chart_colors], len(distributions)), pie_chart_colors], len(distributions)))[
+                            :len(distributions)]
         _generate_legend(ax, legend_colors, legend_names, legend_lw=legend_lw)
     if contours:
         if isinstance(contour_colorscheme, dict):
@@ -184,8 +191,10 @@ def plot_image(ax, distributions,
     if pie_charts:
         if pie_chart_colors is None:
             pie_chart_colors = contour_colorscheme
-        pie_chart_vis.input_image(ax, distributions, np.min(z_sum), np.max(z_sum), pie_num, angle=pie_angle,
-                                  colorschemes=pie_chart_colors, modus=pie_chart_modus, borders=pie_chart_borders)
+        pie_chart_vis.input_image(ax, distributions, z_sum, pie_num, angle=pie_angle,
+                                  colorschemes=pie_chart_colors, modus=pie_chart_modus, borders=pie_chart_borders,
+                                  iso_level=pie_chart_iso_level, level_to_cut=pie_chart_level_to_cut,
+                                  contour_method=pie_chart_contour_method)
 
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
