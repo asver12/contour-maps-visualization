@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib.patches import Wedge
 
-from contour_visualization import helper, color_schemes
+from contour_visualization import helper, color_schemes, picture_contours
 
 import logging
 
@@ -55,7 +55,8 @@ def get_distance_ratio(num_of_pies_x, x_values, y_values):
     return int(num_of_pies_x * (abs(y_values[1] - y_values[0]) / abs(x_values[1] - x_values[0])))
 
 
-def input_image(ax, distribution, z_min, z_max, num_of_pies_x=10, num_of_pies_y=0, angle=0, set_limit=False,
+def input_image(ax, distribution, z_sum=None, num_of_pies_x=10, num_of_pies_y=0, angle=0, set_limit=False,
+                iso_level=8, level_to_cut=0, contour_method="equal_density",
                 colorschemes=color_schemes.get_colorbrewer_schemes(),
                 modus="light", borders=None):
     if borders is None:
@@ -67,38 +68,62 @@ def input_image(ax, distribution, z_min, z_max, num_of_pies_x=10, num_of_pies_y=
         ax.set_xlim([helper.get_x_values(distribution)])
         ax.set_ylim([helper.get_y_values(distribution)])
     if num_of_pies_y == 0:
-        num_of_pies_y = get_distance_ratio(num_of_pies_x, helper.get_x_values(distribution), helper.get_y_values(distribution))
+        num_of_pies_y = get_distance_ratio(num_of_pies_x, helper.get_x_values(distribution),
+                                           helper.get_y_values(distribution))
     container, distances = container_size(*helper.get_x_values(distribution),
                                           *helper.get_y_values(distribution),
                                           num_of_pies_x,
                                           num_of_pies_y)
+    if z_sum is None:
+        z_list = helper.generate_distribution_grids(distribution)
+        z_min, z_max, z_sum = helper.generate_weights(z_list)
+    else:
+        z_min = np.min(z_sum)
+        z_max = np.max(z_sum)
+    if iso_level:
+        if 0 <= level_to_cut <= iso_level:
+            barrier = picture_contours.get_iso_levels(z_sum, contour_method, iso_level)[level_to_cut]
+        else:
+            logger.warn("Point to cut[{}] is not in iso-level[{}]. Using pie-charts without point to cut".format(level_to_cut, iso_level))
+    else:
+        barrier = None
     for k in container[0][0]:
         for l in container[1]:
             middle_point = k, l[0]
             input_values = []
             for j in range(len(distribution)):
                 input_values.append(distribution[j].get_density(middle_point))
-            new_ratio = helper.normalize_array(input_values, min(input_values), max(input_values), 0, 1)
-            if new_ratio is not None:
-                new_ratio = np.asarray(input_values) / len(input_values)
-            if modus == "size":
-                use_colors = [color_schemes.get_main_color(i)[-4] for i in colorschemes]
-                draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
-                         radius=get_radius(min(distances), sum(input_values), z_min, z_max, borders), colors=use_colors)
-            elif modus == "light":
-                use_colors = []
-                for colorscheme in colorschemes:
-                    use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
-                logger.debug("Using colors: {}".format(use_colors))
-                draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
-                         radius=(min(distances) / 2) * 0.9, colors=use_colors)
-            else:
-                use_colors = []
-                for colorscheme in colorschemes:
-                    use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
-                draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
-                         radius=get_radius(min(distances), sum(input_values), z_min, z_max, [0.7, 0.9]),
-                         colors=use_colors)
+            if not barrier:
+                generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max, borders, modus,
+                             colorschemes)
+            elif sum(input_values) > barrier:
+                generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max, borders, modus,
+                             colorschemes)
+
+
+
+def generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max, borders, modus, colorschemes):
+    new_ratio = helper.normalize_array(input_values, min(input_values), max(input_values), 0, 1)
+    if new_ratio is not None:
+        new_ratio = np.asarray(input_values) / len(input_values)
+    if modus == "size":
+        use_colors = [color_schemes.get_main_color(i)[-4] for i in colorschemes]
+        draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
+                 radius=get_radius(min(distances), sum(input_values), z_min, z_max, borders), colors=use_colors)
+    elif modus == "light":
+        use_colors = []
+        for colorscheme in colorschemes:
+            use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
+        logger.debug("Using colors: {}".format(use_colors))
+        draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
+                 radius=(min(distances) / 2) * 0.9, colors=use_colors)
+    else:
+        use_colors = []
+        for colorscheme in colorschemes:
+            use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
+        draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
+                 radius=get_radius(min(distances), sum(input_values), z_min, z_max, [0.7, 0.9]),
+                 colors=use_colors)
 
 
 def get_colors_to_use(colorscheme, sum_input_value, z_min, z_max, borders):
