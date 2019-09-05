@@ -11,7 +11,7 @@ try:
     local_dir = os.path.dirname(__file__)
     lib = cdll.LoadLibrary(local_dir + "/libs/libblendingOperators.so")
 except OSError as e:
-    logger.warn("File libsvmBlend.so could not be found under {}".format(
+    logger.warning("File libsvmBlend.so could not be found under {}".format(
         os.path.dirname(__file__) + "/libs/libblendingOperators.so"))
 
 array_type = c_double * 3

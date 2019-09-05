@@ -60,14 +60,14 @@ class Gaussian(Distribution):
 
         if means is None:
             means = [0, 0]
-            logger.warn("No means defined using default {}".format(means))
+            logger.warning("No means defined using default {}".format(means))
         elif len(means) != 2:
             raise ValueError("len({}) != 2".format(means))
         self.means = means
 
         if cov_matrix is None:
             cov_matrix = [[1, 0], [0, 1]]
-            logger.warn("No covariance-matrix defined. Using default {}".format(cov_matrix))
+            logger.warning("No covariance-matrix defined. Using default {}".format(cov_matrix))
         elif len(cov_matrix) != 2 and any([len(cov_matrix[i]) != 2 for i in [0, 1]]):
             raise ValueError("{}.shape != (2,2)".format(cov_matrix))
         self.cov_matrix = cov_matrix

@@ -9,7 +9,7 @@ try:
     lib = cdll.LoadLibrary(local_dir + "/libs/libblendingOperators.so")
 except OSError as e:
     print("okay")
-    logger.warn("File libsvmBlend.so could not be found under {}".format(
+    logger.warning("File libsvmBlend.so could not be found under {}".format(
         os.path.dirname(__file__) + "/libs/libblendingOperators.so"))
 
 dtype = np.float

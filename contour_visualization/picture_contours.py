@@ -12,7 +12,7 @@ from contour_visualization import color_operations, hierarchic_blending_operator
 try:
     from density_visualization import iso_levels
 except ImportError as e:
-    logger.warn(e)
+    logger.warning(e)
 
 
 def check_constrains(min_value, max_value):

@@ -8,7 +8,7 @@ import numpy as np
 try:
     import mb_modelbase
 except Exception as e:
-    logger.warn(e)
+    logger.warning(e)
 
 from contour_visualization.Distribution import Distribution
 
