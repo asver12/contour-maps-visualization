@@ -84,7 +84,7 @@ def input_image(ax, distribution, z_sum=None, num_of_pies_x=10, num_of_pies_y=0,
         if 0 <= level_to_cut <= iso_level:
             barrier = picture_contours.get_iso_levels(z_sum, contour_method, iso_level)[level_to_cut]
         else:
-            logger.warn("Point to cut[{}] is not in iso-level[{}]. Using pie-charts without point to cut".format(level_to_cut, iso_level))
+            logger.warning("Point to cut[{}] is not in iso-level[{}]. Using pie-charts without point to cut".format(level_to_cut, iso_level))
     else:
         barrier = None
     for k in container[0][0]:
