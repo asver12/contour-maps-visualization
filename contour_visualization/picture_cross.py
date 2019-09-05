@@ -175,17 +175,7 @@ def get_half_lines(middlepoint, direction, length):
     return (startpoint, middlepoint), (middlepoint, endpoint)
 
 
-def checkpoint_constrains(startpoint, endpoint, x_list, y_list):
-    if (not x_list[0][0] <= startpoint[0] <= x_list[0][-1]) or (not x_list[0][0] <= endpoint[0] <= x_list[0][-1]):
-        raise ValueError("Point {} not in Intervall {} for x-value".format((startpoint[0], endpoint[0]),
-                                                                           (x_list[0][0], x_list[0][-1])))
-    if (not y_list[:, 0][0] <= startpoint[1] <= y_list[:, 0][-1]) or \
-            (not y_list[:, 0][0] <= endpoint[1] <= y_list[:, 0][-1]):
-        raise ValueError("Point {} not in Intervall {} for y-value".format((startpoint[1], endpoint[1]),
-                                                                           (y_list[:, 0][0], y_list[:, 0][-1])))
-
-
-def split_half_line(gaussian, startpoint, endpoint, iso_level, x_list, y_list, z_list):
+def split_half_line(gaussian, startpoint, endpoint, iso_level):
     num = 100
     logger.debug("Startpoint: {}".format(startpoint))
     logger.debug("Endpoint: {}".format(endpoint))
@@ -195,22 +185,6 @@ def split_half_line(gaussian, startpoint, endpoint, iso_level, x_list, y_list, z
     _relative_end_point = (_relative_end_point_x, _relative_end_point_y)
     logger.debug("relative startpoint {}".format(_relative_start_point))
     logger.debug("relative endpoint {}".format(_relative_end_point))
-    try:
-        checkpoint_constrains(_relative_start_point, _relative_end_point, x_list, y_list)
-    except ValueError:
-        def ranges(startpoint, endpoint, index):
-            return min(startpoint[index], endpoint[index]), max(startpoint[index], endpoint[index])
-
-        x_min, x_max = ranges(_relative_start_point, _relative_end_point, 0)
-        y_min, y_max = ranges(_relative_start_point, _relative_end_point, 1)
-        x_list, y_list, z_list = gaussian.get_density_grid(x_min=x_min, x_max=x_max,
-                                                           y_min=y_min, y_max=y_max, size=200)
-        try:
-            checkpoint_constrains(_relative_start_point, _relative_end_point, x_list, y_list)
-            logger.warning("New constrains set!")
-        except ValueError as e:
-            raise e
-
     x_1, y_1 = np.linspace(_relative_start_point[0], _relative_end_point[0], num), \
                np.linspace(_relative_start_point[1], _relative_end_point[1], num)
     used_points = [(i, j) for i, j in zip(x_1, y_1)]
@@ -304,24 +278,23 @@ def get_line(gaussian, eigenvalue, eigenvector, colorscheme, min_value=0., max_v
     :param num_of_levels:
     :return:
     """
-    x_list, y_list, z_list = gaussian.get_density_grid()
+    _, _, z_list = gaussian.get_density_grid()
     iso_level = picture_contours.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels)
     first_line, second_line = get_half_lines(gaussian.means, eigenvector, eigenvalue)
-    logger.debug("Shape x values: ".format(np.asarray(x_list.shape)))
-    logger.debug("Shape y values: ".format(np.asarray(y_list.shape)))
     logger.debug("------------------------------------------------------------")
     logger.debug("First Part of Line {}".format(first_line))
     logger.debug("Second Part of Line {}".format(second_line))
     logger.debug("------------------------------------------------------------")
-    first_line = split_half_line(gaussian, *first_line, iso_level, x_list, y_list, z_list)
-    second_line = split_half_line(gaussian, *second_line, iso_level[::-1], x_list, y_list, z_list)
+    first_line = split_half_line(gaussian, *first_line, iso_level)
+    second_line = split_half_line(gaussian, *second_line, iso_level[::-1])
     iso_lvl = picture_contours.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels + 2)
     logger.debug("Min/max-value: {}/{}".format(min_value, max_value))
     logger.debug("Iso-Level: {}".format(iso_lvl))
     iso_lvl = picture_contours.get_color_middlepoint(iso_lvl, min_value, max_value)
     colors = get_color(iso_lvl, colorscheme)
     logger.debug("Colors: {}".format(colors))
-    return [*first_line, *second_line[1:]], [*colors[-len(first_line)+1:], *colors[len(second_line[1:])::-1]], [*iso_lvl, *iso_lvl[::-1]]
+    return [*first_line, *second_line[1:]], [*colors[-len(first_line) + 1:], *colors[len(second_line[1:])::-1]], [
+        *iso_lvl, *iso_lvl[::-1]]
     # return [*first_line, *second_line[1:]], [*colors[:len(first_line)], *colors[len(second_line[1:])::-1]], [
     #     *iso_lvl[:len(first_line)], *iso_lvl[len(second_line[1:])::-1]]
 

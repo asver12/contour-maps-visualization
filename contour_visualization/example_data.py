@@ -163,6 +163,6 @@ def generate_five_gaussians(weights=None, *args, **kwargs):
     for i, j, k, l in it.combinations(range(len(gaussians_1)), 4):
         gaussians_5.append([static_gaussian, gaussians_1[i], gaussians_2[j], gaussians_3[k], gaussians_4[l]])
     example_data = []
-    for i in np.linspace(0, len(gaussians_5)-1, dtype=int):
+    for i in np.linspace(0, len(gaussians_5)-1, dtype=int, num=25):
         example_data.append(gaussians_5[i])
     return example_data
