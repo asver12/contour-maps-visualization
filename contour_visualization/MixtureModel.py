@@ -26,12 +26,11 @@ class MixtureModel:
             means = self.estimator.means_[n, :2]
             cov_matrix = self.estimator.covariances_[n][:2, :2]
             weight = self.estimator.weights_[n]
-            print("Means[{}]: {}".format(n, means))
-            print("Cov-Matrix[{}]: {}".format(n, cov_matrix))
-            print("weights[{}]: {}".format(n, weight))
+            logging.info("Means[{}]: {}".format(n, means))
+            logging.info("Cov-Matrix[{}]: {}".format(n, cov_matrix))
+            logging.info("weights[{}]: {}".format(n, weight))
             datasets.append(
-                Gaussian.Gaussian(weight=weight, means=means, cov_matrix=cov_matrix, x_min=3, x_max=10, y_min=1,
-                                  y_max=5))
+                Gaussian.Gaussian(weight=weight, means=means, cov_matrix=cov_matrix))
         x_min, x_max = helper.get_x_values(datasets)
         y_min, y_max = helper.get_y_values(datasets)
         return [
