@@ -95,7 +95,6 @@ class PictureCrossTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             picture_cross.map_points([], value_line, point_mapping)
 
-
     def test_map_points_basic(self):
         points = np.linspace(0.5, 4.5, 9)
         value_line = np.linspace(0, 5, 11)

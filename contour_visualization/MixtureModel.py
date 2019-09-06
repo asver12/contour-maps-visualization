@@ -21,7 +21,7 @@ class MixtureModel:
         self.estimator.fit(self.data)
 
     def get_gaussians(self):
-        datasets = []
+        dataset = []
         for n in range(self.n_components):
             means = self.estimator.means_[n, :2]
             cov_matrix = self.estimator.covariances_[n][:2, :2]
@@ -29,10 +29,11 @@ class MixtureModel:
             logging.info("Means[{}]: {}".format(n, means))
             logging.info("Cov-Matrix[{}]: {}".format(n, cov_matrix))
             logging.info("weights[{}]: {}".format(n, weight))
-            datasets.append(
+            dataset.append(
                 Gaussian.Gaussian(weight=weight, means=means, cov_matrix=cov_matrix))
-        x_min, x_max = helper.get_x_values(datasets)
-        y_min, y_max = helper.get_y_values(datasets)
-        return [
-            Gaussian.Gaussian(means=gau.means, cov_matrix=gau.cov_matrix, weight=gau.weight, x_min=x_min, x_max=x_max,
-                              y_min=y_min, y_max=y_max) for gau in datasets]
+        return dataset
+        # x_min, x_max = helper.get_x_values(datasets)
+        # y_min, y_max = helper.get_y_values(datasets)
+        # return [
+        #     Gaussian.Gaussian(means=gau.means, cov_matrix=gau.cov_matrix, weight=gau.weight, x_min=x_min, x_max=x_max,
+        #                       y_min=y_min, y_max=y_max) for gau in datasets]

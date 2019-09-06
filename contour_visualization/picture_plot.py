@@ -49,7 +49,7 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
             if len(sub_gaussians) == 1:
                 if plot_titles:
                     title = _generate_title(titles, distributions[i * columns], i * columns)
-                plot_image(ax[i * columns], distributions[i * columns], title=title, legend=True,
+                plot_image(ax, distributions[i * columns], title=title, legend=True,
                            legend_colors=color_legend, *args,
                            **kwargs)
             else:
@@ -132,69 +132,74 @@ def plot_image(ax, distributions,
     """
 
     if contours or contour_lines or pie_charts or crosses:
-        z_list = helper.generate_distribution_grids(distributions)
+        limits = helper.get_limits(distributions)
+        z_list = helper.generate_distribution_grids(distributions, x_min=limits.x_min, x_max=limits.x_max,
+                                                    y_min=limits.y_min, y_max=limits.y_max)
         z_min, z_max, z_sum = helper.generate_weights(z_list)
 
-    # # to avoid a stretched y-axis
-    ax.set_aspect('equal', adjustable='box')
-    #
-    if not contours:
-        if isinstance(ax, type(plt)):
-            ax.xlim(helper.get_x_values(distributions))
-            ax.ylim(helper.get_y_values(distributions))
-        else:
-            ax.set_xlim(helper.get_x_values(distributions))
-            ax.set_ylim(helper.get_y_values(distributions))
-    if title:
-        if isinstance(ax, type(plt)):
-            ax.title(title)
-        else:
-            ax.set_title(title)
-    if legend:
-        if not legend_colors:
-            legend_colors = color_schemes.get_representiv_colors(
-                _evaluate_colors([_evaluate_colors(
-                    [[contour_line_colorscheme, ] if isinstance(contour_line_colorscheme,
-                                                                dict) else contour_line_colorscheme,
-                     [contour_colorscheme, ] if isinstance(contour_colorscheme, dict) else contour_colorscheme,
-                     pie_chart_colors], len(distributions)), pie_chart_colors], len(distributions)))[
-                            :len(distributions)]
-        _generate_legend(ax, legend_colors, legend_names, legend_lw=legend_lw)
-    if contours:
-        if isinstance(contour_colorscheme, dict):
-            picture_contours.input_image(ax, [distributions[0]], [z_sum], np.min(z_sum), np.max(z_sum),
-                                         [contour_colorscheme],
-                                         contour_method,
-                                         contour_lvl, color_space, use_c_implementation, use_alpha_sum,
-                                         blending_operator=blending_operator, borders=contour_borders)
-        else:
-            picture_contours.input_image(ax, distributions, z_list, z_min, z_max, contour_colorscheme, contour_method,
-                                         contour_lvl, color_space, use_c_implementation, use_alpha_sum,
-                                         blending_operator=blending_operator, borders=contour_borders)
-    if crosses:
-        picture_cross.input_crosses(ax, distributions, z_list, z_min, z_max, cross_colorscheme, cross_width,
-                                    cross_borders)
-    if contour_lines:
-        if isinstance(contour_line_colorscheme, dict):
-            picture_contour_lines.generate_contour_lines(ax, z_sum, distributions[0], contour_line_colorscheme,
-                                                         contour_lines_method,
-                                                         contour_lines_weighted, contour_line_level,
-                                                         contour_line_borders,
-                                                         linewidth)
-        else:
-            for z_values, scheme in zip(z_list, contour_line_colorscheme):
-                picture_contour_lines.generate_contour_lines(ax, z_values, distributions[0], scheme,
+        # # to avoid a stretched y-axis
+        ax.set_aspect('equal', adjustable='box')
+        #
+        if not contours:
+            if isinstance(ax, type(plt)):
+                ax.xlim(helper.get_x_values(distributions))
+                ax.ylim(helper.get_y_values(distributions))
+            else:
+                ax.set_xlim(helper.get_x_values(distributions))
+                ax.set_ylim(helper.get_y_values(distributions))
+        if title:
+            if isinstance(ax, type(plt)):
+                ax.title(title)
+            else:
+                ax.set_title(title)
+        if legend:
+            if not legend_colors:
+                legend_colors = color_schemes.get_representiv_colors(
+                    _evaluate_colors([_evaluate_colors(
+                        [[contour_line_colorscheme, ] if isinstance(contour_line_colorscheme,
+                                                                    dict) else contour_line_colorscheme,
+                         [contour_colorscheme, ] if isinstance(contour_colorscheme, dict) else contour_colorscheme,
+                         pie_chart_colors], len(distributions)), pie_chart_colors], len(distributions)))[
+                                :len(distributions)]
+            _generate_legend(ax, legend_colors, legend_names, legend_lw=legend_lw)
+        if contours:
+            if isinstance(contour_colorscheme, dict):
+                picture_contours.input_image(ax, [distributions[0]], [z_sum], np.min(z_sum), np.max(z_sum),
+                                             [contour_colorscheme],
+                                             contour_method,
+                                             contour_lvl, color_space, use_c_implementation, use_alpha_sum,
+                                             blending_operator=blending_operator, borders=contour_borders)
+            else:
+                picture_contours.input_image(ax, distributions, z_list, z_min, z_max, contour_colorscheme,
+                                             contour_method,
+                                             contour_lvl, color_space, use_c_implementation, use_alpha_sum,
+                                             blending_operator=blending_operator, borders=contour_borders)
+        if crosses:
+            picture_cross.input_crosses(ax, distributions, z_list, z_min, z_max, cross_colorscheme, cross_width,
+                                        cross_borders)
+        if contour_lines:
+            if isinstance(contour_line_colorscheme, dict):
+                picture_contour_lines.generate_contour_lines(ax, z_sum, limits,
+                                                             contour_line_colorscheme,
                                                              contour_lines_method,
                                                              contour_lines_weighted, contour_line_level,
                                                              contour_line_borders,
                                                              linewidth)
-    if pie_charts:
-        if pie_chart_colors is None:
-            pie_chart_colors = contour_colorscheme
-        pie_chart_vis.input_image(ax, distributions, z_sum, pie_num, angle=pie_angle,
-                                  colorschemes=pie_chart_colors, modus=pie_chart_modus, borders=pie_chart_borders,
-                                  iso_level=pie_chart_iso_level, level_to_cut=pie_chart_level_to_cut,
-                                  contour_method=pie_chart_contour_method)
+            else:
+                for z_values, scheme in zip(z_list, contour_line_colorscheme):
+                    picture_contour_lines.generate_contour_lines(ax, z_values, limits,
+                                                                 scheme,
+                                                                 contour_lines_method,
+                                                                 contour_lines_weighted, contour_line_level,
+                                                                 contour_line_borders,
+                                                                 linewidth)
+        if pie_charts:
+            if pie_chart_colors is None:
+                pie_chart_colors = contour_colorscheme
+            pie_chart_vis.input_image(ax, distributions, z_sum, pie_num, angle=pie_angle,
+                                      colorschemes=pie_chart_colors, modus=pie_chart_modus, borders=pie_chart_borders,
+                                      iso_level=pie_chart_iso_level, level_to_cut=pie_chart_level_to_cut,
+                                      contour_method=pie_chart_contour_method)
 
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
