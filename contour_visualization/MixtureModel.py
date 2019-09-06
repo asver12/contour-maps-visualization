@@ -1,5 +1,7 @@
 from contour_visualization import Gaussian, helper
 from sklearn.mixture import GaussianMixture
+from sklearn import preprocessing
+import pandas as pd
 
 import logging
 
@@ -7,7 +9,13 @@ logger = logging.getLogger(__name__)
 
 
 class MixtureModel:
-    def __init__(self, data, n_components=3, covariance_type="full", max_iter=20, random_state=0, *args, **kwargs):
+    def __init__(self, data, normalize=True, n_components=3, covariance_type="full", max_iter=20, random_state=0, *args,
+                 **kwargs):
+        if normalize:
+            x = data.values  # returns a numpy array
+            min_max_scaler = preprocessing.MinMaxScaler()
+            x_scaled = min_max_scaler.fit_transform(x)
+            data = pd.DataFrame(x_scaled)
         self.data = data
         self.n_components = n_components
         self.estimator = GaussianMixture(n_components=n_components, covariance_type=covariance_type, max_iter=max_iter,
@@ -32,8 +40,3 @@ class MixtureModel:
             dataset.append(
                 Gaussian.Gaussian(weight=weight, means=means, cov_matrix=cov_matrix))
         return dataset
-        # x_min, x_max = helper.get_x_values(datasets)
-        # y_min, y_max = helper.get_y_values(datasets)
-        # return [
-        #     Gaussian.Gaussian(means=gau.means, cov_matrix=gau.cov_matrix, weight=gau.weight, x_min=x_min, x_max=x_max,
-        #                       y_min=y_min, y_max=y_max) for gau in datasets]
