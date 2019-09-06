@@ -79,6 +79,7 @@ def plot_image(ax, distributions,
                crosses=False, cross_colorscheme=color_schemes.get_colorbrewer_schemes(), cross_width=0.5,
                cross_borders=None,
                pie_charts=False, pie_num=10, pie_angle=90, pie_chart_colors=None, pie_chart_modus="light",
+               pie_chart_scale=1.,
                pie_chart_borders=None,
                pie_chart_iso_level=40,
                pie_chart_level_to_cut=0,
@@ -119,6 +120,7 @@ def plot_image(ax, distributions,
     :param pie_angle: where the pie-chart begins 0 is horizontal beginning on the right 90 beginns at the top
     :param pie_chart_colors: Colorscheme to use. Defaults is colorbrewer
     :param pie_chart_modus: "light" or "size" if "size" global density is coded with size elif "light" through the colorscheme
+    :param pie_chart_scale: when light selected sets the size of the pies
     :param pie_chart_borders: [0.,1.] range of ether size or color lightness of the pies
     :param pie_chart_iso_level:
     :param pie_chart_level_to_cut:
@@ -139,14 +141,15 @@ def plot_image(ax, distributions,
 
         # # to avoid a stretched y-axis
         ax.set_aspect('equal', adjustable='box')
-        #
+        logger.debug("Axis-limits: {}".format(limits))
+
         if not contours:
             if isinstance(ax, type(plt)):
-                ax.xlim(helper.get_x_values(distributions))
-                ax.ylim(helper.get_y_values(distributions))
+                ax.xlim((limits.x_min, limits.x_max))
+                ax.ylim((limits.y_min, limits.y_max))
             else:
-                ax.set_xlim(helper.get_x_values(distributions))
-                ax.set_ylim(helper.get_y_values(distributions))
+                ax.set_xlim((limits.x_min, limits.x_max), emit=False)
+                ax.set_ylim((limits.y_min, limits.y_max), emit=False)
         if title:
             if isinstance(ax, type(plt)):
                 ax.title(title)
@@ -199,7 +202,7 @@ def plot_image(ax, distributions,
             pie_chart_vis.input_image(ax, distributions, z_sum, pie_num, angle=pie_angle,
                                       colorschemes=pie_chart_colors, modus=pie_chart_modus, borders=pie_chart_borders,
                                       iso_level=pie_chart_iso_level, level_to_cut=pie_chart_level_to_cut,
-                                      contour_method=pie_chart_contour_method)
+                                      contour_method=pie_chart_contour_method, scale=pie_chart_scale, set_limit=False)
 
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
