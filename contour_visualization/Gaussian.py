@@ -73,8 +73,8 @@ class Gaussian(Distribution):
         self.cov_matrix = cov_matrix
         self.gau = multivariate_normal(self.means, self.cov_matrix)
         if "x_min" not in kwargs.keys():
-            min_values = -5 * sqrt(cov_matrix[0][0]) + means[0], -5 * sqrt(cov_matrix[1][1]) + means[1]
-            max_values = 5 * sqrt(cov_matrix[0][0]) + means[0], 5 * sqrt(cov_matrix[1][1]) + means[1]
+            min_values = -4 * sqrt(cov_matrix[0][0]) + means[0], -4 * sqrt(cov_matrix[1][1]) + means[1]
+            max_values = 4 * sqrt(cov_matrix[0][0]) + means[0], 4 * sqrt(cov_matrix[1][1]) + means[1]
         else:
             min_values = kwargs["x_min"], kwargs["y_min"]
             max_values = kwargs["x_max"], kwargs["y_max"]

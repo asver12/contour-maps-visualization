@@ -1,4 +1,5 @@
 import random
+from collections import namedtuple
 from typing import List
 
 import numpy as np
@@ -9,8 +10,11 @@ from contour_visualization.Distribution import Distribution
 
 import logging
 
-
 logger = logging.getLogger(__name__)
+c_handler = logging.StreamHandler()
+c_format = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+c_handler.setFormatter(c_format)
+logger.addHandler(c_handler)
 
 
 def normalize_array(X, old_min, old_max, new_min, new_max):
@@ -96,8 +100,20 @@ def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, 
     return get_gaussian(x_min, x_max, y_min, y_max, [mu_x_1, mu_y_1], cov, size)
 
 
-def generate_distribution_grids(distributions: List[Distribution]):
-    return [distribution.get_density_grid()[2] for distribution in distributions]
+Limits = namedtuple("Limits", ["x_min", "x_max", "y_min", "y_max"])
+
+
+def get_limits(distributions):
+    return Limits(*get_x_values(distributions), *get_y_values(distributions))
+
+
+def generate_distribution_grids(distributions: List[Distribution], x_min=None, x_max=None, y_min=None, y_max=None):
+    if x_min is None:
+        x_min, x_max = get_x_values(distributions)
+    if y_min is None:
+        y_min, y_max = get_y_values(distributions)
+    return [distribution.get_density_grid(x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max)[2] for distribution in
+            distributions]
 
 
 def generate_gaussians_old(gaussians):

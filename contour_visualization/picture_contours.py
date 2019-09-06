@@ -5,6 +5,10 @@ from skimage import color
 import logging
 
 logger = logging.getLogger(__name__)
+c_handler = logging.StreamHandler()
+c_format = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+c_handler.setFormatter(c_format)
+logger.addHandler(c_handler)
 
 from contour_visualization import color_operations, hierarchic_blending_operator, helper, c_picture_worker, \
     color_schemes
