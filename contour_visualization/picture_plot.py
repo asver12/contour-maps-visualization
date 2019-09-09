@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 visualizations = ["contour_lines", "contours", "pie_charts", "crosses"]
 
 
-def plot_images(distributions, plot_titles=False, titles="", colors="", columns=5,
+def plot_images(distributions, plot_titles=False, titles="", colors="", columns=5, xlabels="", ylabels="",
                 bottom=0.0,
                 left=0., right=2.,
                 top=2.,
@@ -36,11 +36,18 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
     logger.debug("{}".format(["mu_x", "variance_x", "mu_y", "variance_y"]))
     color_legend = colors if colors else []
     title = ""
+    xlabel = ""
+    ylabel = ""
     if len(distributions) == 1:
         if plot_titles:
             title = _generate_title(titles, distributions[0], 0)
+        if xlabels:
+            xlabel = xlabels
+        if ylabels:
+            ylabel = ylabels
         fig, ax = plt.subplots(1, 1)
-        plot_image(ax, distributions[0], title=title, legend=True, legend_colors=color_legend, *args, **kwargs)
+        plot_image(ax, distributions[0], title=title, legend=True, legend_colors=color_legend, xlabel=xlabel,
+                   ylabel=ylabel, *args, **kwargs)
         fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
     else:
         for i in range(math.ceil(len(distributions) / columns)):
@@ -49,15 +56,23 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
             if len(sub_gaussians) == 1:
                 if plot_titles:
                     title = _generate_title(titles, distributions[i * columns], i * columns)
+                if xlabels:
+                    xlabel = xlabels[i * columns]
+                if ylabels:
+                    ylabel = ylabels[i * columns]
                 plot_image(ax, distributions[i * columns], title=title, legend=True,
-                           legend_colors=color_legend, *args,
+                           legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, *args,
                            **kwargs)
             else:
                 for j in range(len(sub_gaussians)):
                     if plot_titles:
                         title = _generate_title(titles, distributions[j + i * columns], j + i * columns)
+                    if xlabels:
+                        xlabel = xlabels[j + i * columns]
+                    if ylabels:
+                        ylabel = ylabels[j + i * columns]
                     plot_image(ax[j], sub_gaussians[j], title=title, legend=True,
-                               legend_colors=color_legend, *args, **kwargs)
+                               legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, *args, **kwargs)
             fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
 
 
@@ -65,6 +80,7 @@ def _generate_title(titles, gaussian, index):
     if (len(titles) < index or titles == "") and gaussian:
         return '\n'.join("{}".format(gau.get_attributes()[4:-1]) for gau in gaussian)
     return titles[index]
+
 
 def plot_image(ax, distributions,
                contour_lines=False, contour_line_colorscheme=color_schemes.get_background_colorbrewer_scheme(),
@@ -89,7 +105,9 @@ def plot_image(ax, distributions,
                legend_lw=2,
                legend_colors=None,
                legend_names=None,
-               title=""
+               title="",
+               xlabel="",
+               ylabel=""
                ):
     """
     Plots an image at a given axe, can plot contour, contour-lines, crosses and pie-charts
@@ -133,6 +151,8 @@ def plot_image(ax, distributions,
     :param legend_colors: plots colors as lines to legend if not chosen defaults to contour-colors
     :param legend_names: if set uses names instead of numbers
     :param title: title specified if not given non is plotted
+    :param xlabel:
+    :param ylabel:
     :return:
     """
 
@@ -145,6 +165,16 @@ def plot_image(ax, distributions,
         # # to avoid a stretched y-axis
         ax.set_aspect('equal', adjustable='box')
         logger.debug("Axis-limits: {}".format(limits))
+        if xlabel:
+            if isinstance(ax, type(plt)):
+                ax.xlabel(xlabel)
+            else:
+                ax.set_xlabel(xlabel)
+        if ylabel:
+            if isinstance(ax, type(plt)):
+                ax.ylabel(ylabel)
+            else:
+                ax.set_ylabel(ylabel)
 
         if not contours:
             if isinstance(ax, type(plt)):
