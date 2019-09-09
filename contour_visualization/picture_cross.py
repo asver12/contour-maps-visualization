@@ -11,6 +11,8 @@ from contour_visualization.Gaussian import Gaussian
 
 import logging
 
+from contour_visualization.helper import Limits
+
 logger = logging.getLogger(__name__)
 
 
@@ -179,10 +181,7 @@ def split_half_line(gaussian, startpoint, endpoint, iso_level):
     num = 100
     logger.debug("Startpoint: {}".format(startpoint))
     logger.debug("Endpoint: {}".format(endpoint))
-    _relative_start_point_x, _relative_end_point_x = get_broader_interval(startpoint[0], endpoint[0])
-    _relative_start_point_y, _relative_end_point_y = get_broader_interval(startpoint[1], endpoint[1])
-    _relative_start_point = (_relative_start_point_x, _relative_start_point_y)
-    _relative_end_point = (_relative_end_point_x, _relative_end_point_y)
+    _relative_start_point, _relative_end_point = get_broader_interval(startpoint, endpoint, .1)
     logger.debug("relative startpoint {}".format(_relative_start_point))
     logger.debug("relative endpoint {}".format(_relative_end_point))
     x_1, y_1 = np.linspace(_relative_start_point[0], _relative_end_point[0], num), \
@@ -200,21 +199,36 @@ def split_half_line(gaussian, startpoint, endpoint, iso_level):
     return [startpoint, *split_points, endpoint]
 
 
+def get_distance(point_1, point_2):
+    """
+    calc the length for a two points in a n-D-grid
+
+    :param point_1: coordinate (x_1, ..., x_n)
+    :param point_2: coordinate(y_1, ... , y_n)
+    :return: distance between both coordinates
+    """
+    if len(point_1) != len(point_2):
+        raise ValueError("Length of point 1 not equale length of point 2[{} != {}]".format(len(point_1), len(point_2)))
+    return sum((point_2[i] - point_1[i]) ** 2 for i in range(len(point_1))) ** (1 / 2)
+
+
+def get_direction(point_1, point_2):
+    if len(point_1) != len(point_2):
+        raise ValueError("Length of point 1 not equale length of point 2[{} != {}]".format(len(point_1), len(point_2)))
+    direction = [i - j for i, j in zip(point_2, point_1)]
+    return direction / np.linalg.norm(direction)
+
+
 def get_broader_interval(point_1, point_2, percentage=0.1):
-    if point_1 > point_2:
-        return point_1 + get_relative_length(point_2, point_1) * percentage, \
-               point_2 - get_relative_length(point_2, point_1) * percentage
-    return point_1 - get_relative_length(point_1, point_2) * percentage, \
-           point_2 + get_relative_length(point_1, point_2) * percentage
-
-
-def get_relative_length(start, end):
-    return abs(end - start)
+    direction = get_direction(point_2, point_1)
+    distance = get_distance(point_2, point_1)
+    return point_1 + direction * distance * percentage, point_2 - direction * distance * percentage
 
 
 def map_points(points, value_line, point_mapping):
     """
     Finds the closest x and y coordinate by the density for each iso-level. The density is given by a line.
+    The first and the last point on the value_line are exluded!!!
 
     :param points: points for which the x,y-coordinates are wanted
     :param value_line: line on in which the points are approximated
@@ -229,17 +243,20 @@ def map_points(points, value_line, point_mapping):
         raise ValueError("Values[{}] and mapping[{}] doesnt fit".format(len(value_line), len(point_mapping)))
     split_points = []
     for i in points:
+        index = 0
         best_match = value_line[0]
         point = None
         for j, z in enumerate(value_line[1:], 1):
             if abs(i - best_match) > abs(i - z):
-                # logger.debug("New z found: {} [old: {}]".format(z, best_match))
+                logger.debug("New z found: {} [old: {}]".format(z, best_match))
                 best_match = z
                 point = point_mapping[j]
+                index = j
         if point:
-            split_points.append(point)
+            if index < len(value_line) - 1:
+                split_points.append(point)
         else:
-            logger.warning("points in grid of z-coordinates to similar")
+            logger.warning("points in grid of z-coordinates too similar")
     logger.debug("Remaining points: {}".format(points))
     return split_points
 
@@ -248,10 +265,10 @@ def find_point_indices(point, x_list, y_list):
     if len(point) != 2:
         raise ValueError("Point-length {} != 2 [{}]".format(len(point), point))
     if not x_list[0][0] <= point[0] <= x_list[0][-1]:
-        raise ValueError("Point {} not in Intervall {} for x-value".format(point[0], (x_list[0][0], x_list[0][-1])))
+        raise ValueError("Point {} not in Interval {} for x-value".format(point[0], (x_list[0][0], x_list[0][-1])))
     if not y_list[:, 0][0] <= point[1] <= y_list[:, 0][-1]:
-        raise ValueError("Point {} not in Intervall {} for y-value".format(point[1],
-                                                                           (y_list[:, 0][0], y_list[:, 0][-1])))
+        raise ValueError("Point {} not in Interval {} for y-value".format(point[1],
+                                                                          (y_list[:, 0][0], y_list[:, 0][-1])))
     index_x = helper.find_index(point[0], x_list[0].flatten())
     index_y = helper.find_index(point[1], y_list[:, 0].flatten())
     return index_x, index_y
@@ -278,35 +295,32 @@ def get_line(gaussian, eigenvalue, eigenvector, colorscheme, min_value=0., max_v
     :param num_of_levels:
     :return:
     """
-    _, _, z_list = gaussian.get_density_grid()
-    iso_level = picture_contours.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels)
+
+    def get_limits(line, index):
+        return min(line, key=lambda k: k[index])[index], max(line, key=lambda k: k[index])[index]
+
     first_line, second_line = get_half_lines(gaussian.means, eigenvector, eigenvalue)
+    limits = Limits(*get_limits([*first_line, *second_line], 0), *get_limits([*first_line, *second_line], 1))
+    logger.debug("Cross-limits: {}".format(limits))
+    _, _, z_list = gaussian.get_density_grid(x_min=limits.x_min, x_max=limits.x_max, y_min=limits.y_min,
+                                             y_max=limits.y_max)
+    iso_level = picture_contours.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels)
     logger.debug("------------------------------------------------------------")
     logger.debug("First Part of Line {}".format(first_line))
     logger.debug("Second Part of Line {}".format(second_line))
+    logger.debug("Iso-Level for splitting {}".format(iso_level))
     logger.debug("------------------------------------------------------------")
     first_line = split_half_line(gaussian, *first_line, iso_level)
     second_line = split_half_line(gaussian, *second_line, iso_level[::-1])
-    iso_lvl = picture_contours.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels + 2)
+    iso_lvl = picture_contours.get_iso_levels(gaussian.get_density_grid()[2], method=method,
+                                              num_of_levels=num_of_levels + 2)
     logger.debug("Min/max-value: {}/{}".format(min_value, max_value))
-    logger.debug("Iso-Level: {}".format(iso_lvl))
+    logger.debug("Iso-Level for colors: {}".format(iso_lvl))
     iso_lvl = picture_contours.get_color_middlepoint(iso_lvl, min_value, max_value)
     colors = get_color(iso_lvl, colorscheme)
     logger.debug("Colors: {}".format(colors))
     return [*first_line, *second_line[1:]], [*colors[-len(first_line) + 1:], *colors[len(second_line[1:])::-1]], [
         *iso_lvl, *iso_lvl[::-1]]
-    # return [*first_line, *second_line[1:]], [*colors[:len(first_line)], *colors[len(second_line[1:])::-1]], [
-    #     *iso_lvl[:len(first_line)], *iso_lvl[len(second_line[1:])::-1]]
-
-
-"""
-[array([0.95630982, 0.97199609, 1.        , 1.        ]), array([0.92511198, 0.94722686, 0.99428568, 1.        ]), 
-array([0.87282719, 0.92262225, 0.96968108, 1.        ]), array([0.79999307, 0.87450518, 0.94509573, 1.        ]), 
-array([0.75692278, 0.85013561, 0.91987907, 1.        ]), array([0.70031047, 0.8259999 , 0.8979728 , 1.        ])]
-
-[0.00351246 0.00648906 0.00947214 0.01243449 0.01540133 0.01837032 0.0213396 ]
-[0.00351246 0.00648906 0.00947214 0.01243449 0.01540133 0.01837032 0.0213396 ]
-"""
 
 
 def generate_rectangle_from_line(line, eigenvector, broad):
@@ -336,7 +350,8 @@ def generate_rectangle_from_line(line, eigenvector, broad):
     return new_line
 
 
-def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad=3, *args, **kwargs):
+def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad="5%", same_broad=True,
+              length_multiplier=2. * np.sqrt(2.), *args, **kwargs):
     """
     Caculates the two rectangles with matching colors and the iso-level for a cross.
 
@@ -345,6 +360,8 @@ def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad=3, *args,
     :param min_value: minimum color-percentage to take
     :param max_value: maximum color-percentage to take
     :param broad: broad of the cross
+    :param same_broad: cross size is caculated with the smaller side of the cross otherwise it is calculated for both
+    :param length_multiplier: value to multiply the eigenvalues with. results shorter or longer cross
     :return:
     """
     if not hasattr(gaussian, "cov_matrix"):
@@ -353,26 +370,58 @@ def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad=3, *args,
         raise AttributeError("[{}] property 'mean' is missing".format(type(gaussian)))
     picture_contours.check_constrains(min_value, max_value)
     eigenvalues, eigenvectors = linalg.eigh(gaussian.cov_matrix)
+    eigenvalues = length_multiplier * np.sqrt(eigenvalues)
     if eigenvalues[0] < eigenvalues[1]:
         eigenvalues[0], eigenvalues[1] = eigenvalues[1], eigenvalues[0]
     logger.debug("Distribution: {}".format(gaussian))
     logger.debug("Eigenvalues: {}".format(eigenvalues))
     logger.debug("Eigenvectors: {}".format(eigenvectors))
-    line_1, colors_1, z_lvl_1 = get_line(gaussian, eigenvalues[0],
-                                         eigenvectors[1],
-                                         colorscheme,
-                                         min_value, max_value,
-                                         *args,
-                                         **kwargs)
-    line_2, colors_2, z_lvl_2 = get_line(gaussian, eigenvalues[1],
-                                         eigenvectors[0],
-                                         colorscheme,
-                                         min_value, max_value,
-                                         *args,
-                                         **kwargs)
-    rectangle_1 = generate_rectangle_from_line(line_1, eigenvectors[0], broad)
-    rectangle_2 = generate_rectangle_from_line(line_2, eigenvectors[1], broad)
-    return rectangle_1, rectangle_2, colors_1, colors_2, z_lvl_1, z_lvl_2
+    line_long, colors_long, z_lvl_long = get_line(gaussian, eigenvalues[0],
+                                                  eigenvectors[1],
+                                                  colorscheme,
+                                                  min_value, max_value,
+                                                  *args,
+                                                  **kwargs)
+    line_short, colors_short, z_lvl_short = get_line(gaussian, eigenvalues[1],
+                                                     eigenvectors[0],
+                                                     colorscheme,
+                                                     min_value, max_value,
+                                                     *args,
+                                                     **kwargs)
+    broad_short, broad_long = get_broad(broad, line_short, line_long, same_broad)
+    rectangle_1 = generate_rectangle_from_line(line_short, eigenvectors[1], broad_short)
+    rectangle_2 = generate_rectangle_from_line(line_long, eigenvectors[0], broad_long)
+    return rectangle_1, rectangle_2, colors_short, colors_long, z_lvl_short, z_lvl_long
+
+
+def get_broad(broad, line_short, line_long, same_length=True):
+    """
+    input ether a number or a relative number in format 50.0% and returns broad fitting to it
+
+
+    :param broad: int or str in format 50.0% which is used to get a relative broad
+    :param line_short: line in format [(x_1, y_1), ... , x_n, y_n)
+    :param line_long: line in format [(x_1, y_1), ... , x_n, y_n)
+    :param same_length: if set true calculates only the relative distance for the smaller cross
+    :return: broad for line short, broad for line long
+
+    """
+    broad_short = broad
+    broad_long = broad
+    if isinstance(broad, str):
+        try:
+            broad = float(broad[:-1]) / 100
+            if same_length:
+                broad_short = broad * get_distance(line_short[0], line_short[-1])
+                broad_long = broad_short
+            else:
+                broad_short = broad * get_distance(line_short[0], line_short[-1])
+                broad_long = broad * get_distance(line_long[0], line_long[-1])
+        except ValueError:
+            raise ValueError("Broad not in format 50.0%[{}]".format(broad))
+        except Exception as e:
+            raise e
+    return broad_short, broad_long
 
 
 def generate_cross(axis, line_1, line_2, colors_1, colors_2):
@@ -382,7 +431,9 @@ def generate_cross(axis, line_1, line_2, colors_1, colors_2):
     generate_line(axis, line_2, colors_2)
 
 
-def genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length=3, borders=None, *args, **kwargs):
+def genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%", same_broad=True,
+                       length_mutliplier=2. * np.sqrt(2.), borders=None,
+                       *args, **kwargs):
     if borders is None:
         borders = [0, 1]
     lower_border = borders[0]
@@ -392,16 +443,22 @@ def genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length=3, 
         z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
         z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
         z_weights.append([z_min_weight, z_max_weight])
-    return [get_cross(i, j, *k, length, *args, **kwargs) for i, j, k in zip(gaussians, colorschemes, z_weights)]
+    return [get_cross(i, j, *k, broad, same_broad, length_mutliplier, *args, **kwargs) for i, j, k in
+            zip(gaussians, colorschemes, z_weights)]
 
 
-def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, length=3, borders=None, color_space="lab", *args,
+def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, broad=3, same_broad=True,
+                  length_multiplier=2. * np.sqrt(2.), borders=None,
+                  color_space="lab", *args,
                   **kwargs):
     if not hasattr(gaussians[0], "cov_matrix"):
         raise AttributeError("[{}] property 'cov_matrix is missing".format(type(gaussians[0])))
     if not hasattr(gaussians[0], "means"):
         raise AttributeError("[{}] property 'mean' is missing".format(type(gaussians[0])))
-    cross_lines = genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length, borders, *args, **kwargs)
+    cross_lines = genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad, same_broad,
+                                     length_multiplier,
+                                     borders, *args,
+                                     **kwargs)
     for cross in cross_lines:
         generate_cross(ax, *cross[:4])
     fill_between_lines(ax, cross_lines, color_space=color_space)
