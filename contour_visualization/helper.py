@@ -82,6 +82,7 @@ def get_gaussian(x_min, x_max, y_min, y_max, mean=None, cov=None, size=500000):
 def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, size, scale_factor=1.):
     """
     generates a random gaussian inbetween the given min and max values
+
     :param x_min: minimal x-value for the x-expectation
     :param x_max: maximal x-value for the x-expectation
     :param y_min: minimal y-value for the y-expectation
