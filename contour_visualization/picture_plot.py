@@ -77,6 +77,7 @@ def plot_image(ax, distributions,
                use_alpha_sum=False, blending_operator=hierarchic_blending_operator.porter_duff_source_over,
                contour_borders=None,
                crosses=False, cross_colorscheme=color_schemes.get_colorbrewer_schemes(), cross_width="5%",
+               cross_same_length=True,
                cross_borders=None,
                pie_charts=False, pie_num=10, pie_angle=90, pie_chart_colors=None, pie_chart_modus="light",
                pie_chart_scale=1.,
@@ -114,6 +115,7 @@ def plot_image(ax, distributions,
     :param crosses:
     :param cross_colorscheme:
     :param cross_width:
+    :param cross_same_length: if True calculates the broad of the crosses depending by the smaller cross
     :param cross_borders:
     :param pie_charts:
     :param pie_num:
@@ -179,6 +181,7 @@ def plot_image(ax, distributions,
                                              blending_operator=blending_operator, borders=contour_borders)
         if crosses:
             picture_cross.input_crosses(ax, distributions, z_list, z_min, z_max, cross_colorscheme, cross_width,
+                                        cross_same_length,
                                         cross_borders)
         if contour_lines:
             if isinstance(contour_line_colorscheme, dict):
