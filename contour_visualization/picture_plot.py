@@ -66,10 +66,9 @@ def _generate_title(titles, gaussian, index):
         return '\n'.join("{}".format(gau.get_attributes()[4:-1]) for gau in gaussian)
     return titles[index]
 
-
 def plot_image(ax, distributions,
                contour_lines=False, contour_line_colorscheme=color_schemes.get_background_colorbrewer_scheme(),
-               contour_lines_method="equal_density", contour_lines_weighted=True, contour_line_level=8,
+               contour_lines_method="equal_density", contour_lines_weighted=True, contour_line_level=5,
                contour_line_borders=None,
                linewidth=2,
                contours=False, contour_colorscheme=color_schemes.get_colorbrewer_schemes(),
@@ -77,9 +76,10 @@ def plot_image(ax, distributions,
                use_alpha_sum=False, blending_operator=hierarchic_blending_operator.porter_duff_source_over,
                contour_borders=None,
                crosses=False, cross_colorscheme=color_schemes.get_colorbrewer_schemes(), cross_width="5%",
-               cross_same_length=True,
+               cross_same_broad=True,
+               cross_length_multiplier=2. * np.sqrt(2.),
                cross_borders=None,
-               pie_charts=False, pie_num=10, pie_angle=90, pie_chart_colors=None, pie_chart_modus="light",
+               pie_charts=False, pie_num=25, pie_angle=90, pie_chart_colors=None, pie_chart_modus="light",
                pie_chart_scale=1.,
                pie_chart_borders=None,
                pie_chart_iso_level=40,
@@ -115,7 +115,8 @@ def plot_image(ax, distributions,
     :param crosses:
     :param cross_colorscheme:
     :param cross_width:
-    :param cross_same_length: if True calculates the broad of the crosses depending by the smaller cross
+    :param cross_same_broad: if True calculates the broad of the crosses depending by the smaller cross
+    :param cross_length_multiplier: is multiplied with the lenght to create bigger or smaller crosses
     :param cross_borders:
     :param pie_charts:
     :param pie_num:
@@ -181,7 +182,8 @@ def plot_image(ax, distributions,
                                              blending_operator=blending_operator, borders=contour_borders)
         if crosses:
             picture_cross.input_crosses(ax, distributions, z_list, z_min, z_max, cross_colorscheme, cross_width,
-                                        cross_same_length,
+                                        cross_same_broad,
+                                        cross_length_multiplier,
                                         cross_borders)
         if contour_lines:
             if isinstance(contour_line_colorscheme, dict):

@@ -256,7 +256,7 @@ def map_points(points, value_line, point_mapping):
             if index < len(value_line) - 1:
                 split_points.append(point)
         else:
-            logger.warning("points in grid of z-coordinates to similar")
+            logger.warning("points in grid of z-coordinates too similar")
     logger.debug("Remaining points: {}".format(points))
     return split_points
 
@@ -350,7 +350,8 @@ def generate_rectangle_from_line(line, eigenvector, broad):
     return new_line
 
 
-def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad="5%", same_length=True, *args, **kwargs):
+def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad="5%", same_broad=True,
+              length_multiplier=2. * np.sqrt(2.), *args, **kwargs):
     """
     Caculates the two rectangles with matching colors and the iso-level for a cross.
 
@@ -359,7 +360,8 @@ def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad="5%", sam
     :param min_value: minimum color-percentage to take
     :param max_value: maximum color-percentage to take
     :param broad: broad of the cross
-    :param same_length: cross size is caculated with the smaler side of the cross otherwise it is calculated for both
+    :param same_broad: cross size is caculated with the smaller side of the cross otherwise it is calculated for both
+    :param length_multiplier: value to multiply the eigenvalues with. results shorter or longer cross
     :return:
     """
     if not hasattr(gaussian, "cov_matrix"):
@@ -368,6 +370,7 @@ def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad="5%", sam
         raise AttributeError("[{}] property 'mean' is missing".format(type(gaussian)))
     picture_contours.check_constrains(min_value, max_value)
     eigenvalues, eigenvectors = linalg.eigh(gaussian.cov_matrix)
+    eigenvalues = length_multiplier * np.sqrt(eigenvalues)
     if eigenvalues[0] < eigenvalues[1]:
         eigenvalues[0], eigenvalues[1] = eigenvalues[1], eigenvalues[0]
     logger.debug("Distribution: {}".format(gaussian))
@@ -385,7 +388,7 @@ def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad="5%", sam
                                                      min_value, max_value,
                                                      *args,
                                                      **kwargs)
-    broad_short, broad_long = get_broad(broad, line_short, line_long, same_length)
+    broad_short, broad_long = get_broad(broad, line_short, line_long, same_broad)
     rectangle_1 = generate_rectangle_from_line(line_short, eigenvectors[1], broad_short)
     rectangle_2 = generate_rectangle_from_line(line_long, eigenvectors[0], broad_long)
     return rectangle_1, rectangle_2, colors_short, colors_long, z_lvl_short, z_lvl_long
@@ -399,7 +402,7 @@ def get_broad(broad, line_short, line_long, same_length=True):
     :param broad: int or str in format 50.0% which is used to get a relative broad
     :param line_short: line in format [(x_1, y_1), ... , x_n, y_n)
     :param line_long: line in format [(x_1, y_1), ... , x_n, y_n)
-    :param same_length: if set true calculates only the relative distance for the smaler cross
+    :param same_length: if set true calculates only the relative distance for the smaller cross
     :return: broad for line short, broad for line long
 
     """
@@ -428,7 +431,8 @@ def generate_cross(axis, line_1, line_2, colors_1, colors_2):
     generate_line(axis, line_2, colors_2)
 
 
-def genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length="50%", same_length=True, borders=None,
+def genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%", same_broad=True,
+                       length_mutliplier=2. * np.sqrt(2.), borders=None,
                        *args, **kwargs):
     if borders is None:
         borders = [0, 1]
@@ -439,18 +443,21 @@ def genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length="50
         z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
         z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
         z_weights.append([z_min_weight, z_max_weight])
-    return [get_cross(i, j, *k, length, same_length, *args, **kwargs) for i, j, k in
+    return [get_cross(i, j, *k, broad, same_broad, length_mutliplier, *args, **kwargs) for i, j, k in
             zip(gaussians, colorschemes, z_weights)]
 
 
-def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, length=3, same_length=True, borders=None,
+def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, broad=3, same_broad=True,
+                  length_multiplier=2. * np.sqrt(2.), borders=None,
                   color_space="lab", *args,
                   **kwargs):
     if not hasattr(gaussians[0], "cov_matrix"):
         raise AttributeError("[{}] property 'cov_matrix is missing".format(type(gaussians[0])))
     if not hasattr(gaussians[0], "means"):
         raise AttributeError("[{}] property 'mean' is missing".format(type(gaussians[0])))
-    cross_lines = genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, length, same_length, borders, *args,
+    cross_lines = genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad, same_broad,
+                                     length_multiplier,
+                                     borders, *args,
                                      **kwargs)
     for cross in cross_lines:
         generate_cross(ax, *cross[:4])

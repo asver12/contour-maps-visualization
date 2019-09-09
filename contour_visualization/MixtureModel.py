@@ -9,13 +9,13 @@ logger = logging.getLogger(__name__)
 
 
 class MixtureModel:
-    def __init__(self, data, normalize=True, n_components=3, covariance_type="full", max_iter=20, random_state=0, *args,
+    def __init__(self, df, normalize=True, n_components=3, covariance_type="full", max_iter=100, random_state=0,
+                 *args,
                  **kwargs):
         if normalize:
-            x = data.values  # returns a numpy array
-            min_max_scaler = preprocessing.MinMaxScaler()
-            x_scaled = min_max_scaler.fit_transform(x)
-            data = pd.DataFrame(x_scaled)
+            data = (df-df.min())/(df.max()-df.min())
+        else:
+            data = df
         self.data = data
         self.n_components = n_components
         self.estimator = GaussianMixture(n_components=n_components, covariance_type=covariance_type, max_iter=max_iter,
@@ -38,5 +38,5 @@ class MixtureModel:
             logging.info("Cov-Matrix[{}]: {}".format(n, cov_matrix))
             logging.info("weights[{}]: {}".format(n, weight))
             dataset.append(
-                Gaussian.Gaussian(weight=weight, means=means, cov_matrix=cov_matrix))
+                Gaussian.Gaussian(weight=weight, means=means, cov_matrix=cov_matrix**1/2))
         return dataset
