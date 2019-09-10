@@ -14,10 +14,13 @@ color_codes = [color_schemes.get_main_color(i)[-4] for i in colorschemes]
 def sort_ratios(sorting_list, sorted_list):
     """
     sorts both lists with with the keys from the first list
+
     :param sorting_list: list which is used to sort
     :param sorted_list: list which is sorted by first list
     :return: both list sorted by first list
     """
+    if len(sorting_list) != len(sorted_list):
+        raise ValueError("Length of list not equale {} != {}".format(len(sorting_list), len(sorted_list)))
     return zip(*sorted(zip(sorting_list, sorted_list[:len(sorting_list)])))
 
 
@@ -47,7 +50,8 @@ def container_size(num_of_pies_row, num_of_pies_column, limits):
     y = np.linspace(limits.y_min, limits.y_max, num_of_pies_column + 1)
     x = [(i + j) / 2 for i, j in zip(x[:-1], x[1:])]
     y = [(i + j) / 2 for i, j in zip(y[:-1], y[1:])]
-    distances = abs(limits.x_max - limits.x_min) / num_of_pies_row, abs(limits.y_max - limits.y_min) / num_of_pies_column
+    distances = abs(limits.x_max - limits.x_min) / num_of_pies_row, abs(
+        limits.y_max - limits.y_min) / num_of_pies_column
     return np.meshgrid(x, y, sparse=True), distances
 
 
@@ -101,7 +105,8 @@ def input_image(ax, distribution, z_sum=None, num_of_pies_x=10, num_of_pies_y=0,
                              colorschemes, scale)
 
 
-def generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max, borders, modus, colorschemes, scale=1.):
+def generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max, borders, modus, colorschemes,
+                 scale=1.):
     new_ratio = helper.normalize_array(input_values, min(input_values), max(input_values), 0, 1)
     if new_ratio is not None:
         new_ratio = np.asarray(input_values) / len(input_values)
