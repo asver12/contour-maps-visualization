@@ -27,7 +27,7 @@ def sort_ratios(sorting_list, sorted_list):
 def draw_pie(ax, ratios, center, colors=None, radius=0.02, angle=0, ):
     if colors is None:
         colors = color_codes
-    ratios, colors = sort_ratios(ratios, colors)
+    ratios, colors = sort_ratios(ratios, colors[:len(ratios)])
     thetas = []
     sum_ratios = sum(ratios)
     for i in ratios:
