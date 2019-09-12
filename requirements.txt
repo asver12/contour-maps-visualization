@@ -1,10 +1,13 @@
 ###### Requirements ##########
+
 pyclipper
 jupyter
 scikit-image
 scipy
+sklearn
 numpy
 matplotlib
+
 #### density_visualization #####
 pandas
 #

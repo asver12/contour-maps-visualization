@@ -15,6 +15,12 @@ logger = logging.getLogger(__name__)
 visualizations = ["contour_lines", "contours", "pie_charts", "crosses"]
 
 
+def plot_all_methods(distributions, *args, **kwargs):
+    plot_images(distributions, contours=True, contour_lines=True, *args, **kwargs)
+    plot_images(distributions, pie_charts=True, *args, **kwargs)
+    plot_images(distributions, crosses=True, contour_lines=True, *args, **kwargs)
+
+
 def plot_images(distributions, plot_titles=False, titles="", colors="", columns=5, xlabels="", ylabels="",
                 bottom=0.0,
                 left=0., right=2.,
