@@ -164,7 +164,7 @@ def generate_weights(z_values):
     return z_min, z_max, z_sum
 
 
-def find_index(number, levels, verbose=False):
+def find_index(number, levels):
     """
     finds the position of a number in a sorted list. If the number is smaller then the smallest element in the list the
     function returns 0 if it is bigger than the biggest number in the list it returns the length of the list

@@ -7,12 +7,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def generate_gaussian_plots(data, columns, n_components):
+def generate_gaussian_plots(data, columns, n_components, *args, **kwargs):
     models = []
     xlabels = []
     ylabels = []
     for i, j in itertools.combinations(columns, 2):
-        models.append(MixtureModel(data[[i, j]], n_components=n_components).get_gaussians())
+        models.append(MixtureModel(data[[i, j]], n_components=n_components).get_gaussians(*args, **kwargs))
         xlabels.append(i)
         ylabels.append(j)
     return models, xlabels, ylabels
@@ -38,7 +38,7 @@ class MixtureModel:
                                          random_state=random_state, *args, **kwargs)
         self.estimator.fit(self.data)
 
-    def get_gaussians(self):
+    def get_gaussians(self, *args, **kwargs):
         dataset = []
         for n in range(self.n_components):
             means = self.estimator.means_[n, :2]
@@ -48,5 +48,5 @@ class MixtureModel:
             logging.info("Cov-Matrix[{}]: {}".format(n, cov_matrix))
             logging.info("weights[{}]: {}".format(n, weight))
             dataset.append(
-                Gaussian.Gaussian(weight=weight, means=means, cov_matrix=cov_matrix ** 1 / 2))
+                Gaussian.Gaussian(weight=weight, means=means, cov_matrix=cov_matrix ** 1 / 2, *args, **kwargs))
         return dataset

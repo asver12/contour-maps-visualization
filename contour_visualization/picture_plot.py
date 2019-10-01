@@ -21,6 +21,37 @@ def plot_all_methods(distributions, *args, **kwargs):
     plot_images(distributions, crosses=True, contour_lines=True, *args, **kwargs)
 
 
+def plot_image_variations(distribution, plot_titles=False, titles="", colors="", xlabels="", ylabels="",
+                          *args, **kwargs
+                          ):
+    """
+    plots all three types of plots for one distribution
+
+    :param distribution:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    logger.debug("{}".format(["mu_x", "variance_x", "mu_y", "variance_y"]))
+    color_legend = colors if colors else []
+    title = ""
+    xlabel = ""
+    ylabel = ""
+    if plot_titles:
+        title = _generate_title(titles, distribution, 0)
+    if xlabels:
+        xlabel = xlabels
+    if ylabels:
+        ylabel = ylabels
+    fig, ax = plt.subplots(1, 3, sharex='col', sharey='row')
+    plot_image(ax[0], distribution, title=title, legend=True, legend_colors=color_legend, xlabel=xlabel,
+               ylabel=ylabel, contours=True, contour_lines=True, *args, **kwargs)
+    plot_image(ax[1], distribution, title=title, legend=True, legend_colors=color_legend, xlabel=xlabel,
+               ylabel=ylabel, crosses=True, contour_lines=True, *args, **kwargs)
+    plot_image(ax[2], distribution, title=title, legend=True, legend_colors=color_legend, xlabel=xlabel,
+               ylabel=ylabel, pie_charts=True, *args, **kwargs)
+
+
 def plot_images(distributions, plot_titles=False, titles="", colors="", columns=5, xlabels="", ylabels="",
                 bottom=0.0,
                 left=0., right=2.,
@@ -66,9 +97,12 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
                     xlabel = xlabels[i * columns]
                 if ylabels:
                     ylabel = ylabels[i * columns]
-                plot_image(ax, distributions[i * columns], title=title, legend=True,
-                           legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, *args,
-                           **kwargs)
+                try:
+                    plot_image(ax, distributions[i * columns], title=title, legend=True,
+                               legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, *args,
+                               **kwargs)
+                except Exception as e:
+                    print(e)
             else:
                 for j in range(len(sub_gaussians)):
                     if plot_titles:
@@ -77,8 +111,11 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
                         xlabel = xlabels[j + i * columns]
                     if ylabels:
                         ylabel = ylabels[j + i * columns]
-                    plot_image(ax[j], sub_gaussians[j], title=title, legend=True,
-                               legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, *args, **kwargs)
+                    try:
+                        plot_image(ax[j], sub_gaussians[j], *args, title=title, legend=True,
+                                   legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, **kwargs)
+                    except Exception as e:
+                        print(e)
             fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
 
 
@@ -96,6 +133,9 @@ def plot_image(ax, distributions,
                contours=False, contour_colorscheme=color_schemes.get_colorbrewer_schemes(),
                contour_method="equal_density", contour_lvl=8, color_space="lab", use_c_implementation=True,
                use_alpha_sum=False, blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+               contour_min_gauss=False,
+               contour_lower_border_lvl=None,
+               contour_lower_border_to_cut=0,
                contour_borders=None,
                crosses=False, cross_colorscheme=color_schemes.get_colorbrewer_schemes(), cross_width="5%",
                cross_same_broad=True,
@@ -135,6 +175,9 @@ def plot_image(ax, distributions,
     :param use_c_implementation:
     :param use_alpha_sum:
     :param blending_operator:
+    :param contour_min_gauss: if min of min gauss is used when True else from z_sum
+    :param contour_lower_border_to_cut: defines the global lower border at which to cut the particular each image
+    :param contour_lower_border_lvl: def at which level the iso-border gets cut
     :param contour_borders:
     :param crosses:
     :param cross_colorscheme:
@@ -169,7 +212,10 @@ def plot_image(ax, distributions,
         z_min, z_max, z_sum = helper.generate_weights(z_list)
 
         # # to avoid a stretched y-axis
-        ax.set_aspect('equal', adjustable='box')
+        if isinstance(ax, type(plt)):
+            pass  # ax.aspect('equal', adjustable='box')
+        else:
+            ax.set_aspect('equal', adjustable='box')
         logger.debug("Axis-limits: {}".format(limits))
         if xlabel:
             if isinstance(ax, type(plt)):
@@ -206,16 +252,22 @@ def plot_image(ax, distributions,
             _generate_legend(ax, legend_colors, legend_names, legend_lw=legend_lw)
         if contours:
             if isinstance(contour_colorscheme, dict):
-                picture_contours.input_image(ax, [distributions[0]], [z_sum], np.min(z_sum), np.max(z_sum),
+                picture_contours.input_image(ax, [distributions[0]], [z_sum], np.min(z_sum), np.max(z_sum), z_sum,
                                              [contour_colorscheme],
                                              contour_method,
                                              contour_lvl, color_space, use_c_implementation, use_alpha_sum,
-                                             blending_operator=blending_operator, borders=contour_borders)
+                                             blending_operator=blending_operator, borders=contour_borders,
+                                             min_gauss=contour_min_gauss,
+                                             lower_border=contour_lower_border_lvl,
+                                             lower_border_to_cut=contour_lower_border_to_cut)
             else:
-                picture_contours.input_image(ax, distributions, z_list, z_min, z_max, contour_colorscheme,
+                picture_contours.input_image(ax, distributions, z_list, z_min, z_max, z_sum, contour_colorscheme,
                                              contour_method,
                                              contour_lvl, color_space, use_c_implementation, use_alpha_sum,
-                                             blending_operator=blending_operator, borders=contour_borders)
+                                             blending_operator=blending_operator, borders=contour_borders,
+                                             min_gauss=contour_min_gauss,
+                                             lower_border=contour_lower_border_lvl,
+                                             lower_border_to_cut=contour_lower_border_to_cut)
         if crosses:
             picture_cross.input_crosses(ax, distributions, z_list, z_min, z_max, cross_colorscheme, cross_width,
                                         cross_same_broad,
