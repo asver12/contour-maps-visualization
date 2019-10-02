@@ -132,7 +132,7 @@ def plot_image(ax, distributions,
                linewidth=2,
                contours=False, contour_colorscheme=color_schemes.get_colorbrewer_schemes(),
                contour_method="equal_density", contour_lvl=8, color_space="lab", use_c_implementation=True,
-               use_alpha_sum=False, blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+               contour_mode="hierarchic", blending_operator=hierarchic_blending_operator.porter_duff_source_over,
                contour_min_gauss=False,
                contour_lower_border_lvl=None,
                contour_lower_border_to_cut=0,
@@ -173,7 +173,7 @@ def plot_image(ax, distributions,
     :param contour_lvl:
     :param color_space:
     :param use_c_implementation:
-    :param use_alpha_sum:
+    :param contour_mode: sets the mode to use. Defaults is hierarchic and defaults to hierarchic
     :param blending_operator:
     :param contour_min_gauss: if min of min gauss is used when True else from z_sum
     :param contour_lower_border_to_cut: defines the global lower border at which to cut the particular each image
@@ -255,7 +255,7 @@ def plot_image(ax, distributions,
                 picture_contours.input_image(ax, [distributions[0]], [z_sum], np.min(z_sum), np.max(z_sum), z_sum,
                                              [contour_colorscheme],
                                              contour_method,
-                                             contour_lvl, color_space, use_c_implementation, use_alpha_sum,
+                                             contour_lvl, color_space, use_c_implementation, contour_mode,
                                              blending_operator=blending_operator, borders=contour_borders,
                                              min_gauss=contour_min_gauss,
                                              lower_border=contour_lower_border_lvl,
@@ -263,7 +263,7 @@ def plot_image(ax, distributions,
             else:
                 picture_contours.input_image(ax, distributions, z_list, z_min, z_max, z_sum, contour_colorscheme,
                                              contour_method,
-                                             contour_lvl, color_space, use_c_implementation, use_alpha_sum,
+                                             contour_lvl, color_space, use_c_implementation, contour_mode,
                                              blending_operator=blending_operator, borders=contour_borders,
                                              min_gauss=contour_min_gauss,
                                              lower_border=contour_lower_border_lvl,
@@ -300,7 +300,7 @@ def plot_image(ax, distributions,
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
     if names is None:
-        names = [i for i in range(len(colors))]
+        names = [chr(i+97) for i in range(len(colors))]
     custom_lines = [Line2D([0], [0], color=colors[i], lw=legend_lw) for i in
                     range(len(colors))]
     axis.legend(custom_lines, names,

@@ -7,7 +7,6 @@ import itertools
 import pyclipper
 
 from contour_visualization import helper, picture_contours, color_schemes, hierarchic_blending_operator
-from contour_visualization.Gaussian import Gaussian
 
 import logging
 
@@ -345,6 +344,7 @@ def generate_rectangle_from_line(line, eigenvector, broad):
     """
     new_line = []
     for i in line:
+        # split each point and move it orthogonal to the line
         first_point, second_point = get_half_lines(i, eigenvector, broad)
         new_line.append((first_point[0], second_point[1]))
     return new_line
@@ -389,6 +389,7 @@ def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad="5%", sam
                                                      *args,
                                                      **kwargs)
     broad_short, broad_long = get_broad(broad, line_short, line_long, same_broad)
+    # since eigenvectors are orthogonal to each other just change them for the direction
     rectangle_1 = generate_rectangle_from_line(line_short, eigenvectors[1], broad_short)
     rectangle_2 = generate_rectangle_from_line(line_long, eigenvectors[0], broad_long)
     return rectangle_1, rectangle_2, colors_short, colors_long, z_lvl_short, z_lvl_long
@@ -431,9 +432,9 @@ def generate_cross(axis, line_1, line_2, colors_1, colors_2):
     generate_line(axis, line_2, colors_2)
 
 
-def genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%", same_broad=True,
-                       length_mutliplier=2. * np.sqrt(2.), borders=None,
-                       *args, **kwargs):
+def generate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%", same_broad=True,
+                     length_mutliplier=2. * np.sqrt(2.), borders=None,
+                     *args, **kwargs):
     if borders is None:
         borders = [0, 1]
     lower_border = borders[0]
@@ -455,10 +456,10 @@ def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, broad=3, sa
         raise AttributeError("[{}] property 'cov_matrix is missing".format(type(gaussians[0])))
     if not hasattr(gaussians[0], "means"):
         raise AttributeError("[{}] property 'mean' is missing".format(type(gaussians[0])))
-    cross_lines = genenerate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad, same_broad,
-                                     length_multiplier,
-                                     borders, *args,
-                                     **kwargs)
+    cross_lines = generate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad, same_broad,
+                                   length_multiplier,
+                                   borders, *args,
+                                   **kwargs)
     for cross in cross_lines:
         generate_cross(ax, *cross[:4])
     fill_between_lines(ax, cross_lines, color_space=color_space)
