@@ -207,7 +207,7 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
                     num_of_levels=8,
                     color_space="lab",
                     use_c_implementation=False,
-                    use_alpha_sum=True,
+                    mode="hierarchic",
                     blending_operator=hierarchic_blending_operator.porter_duff_source_over,
                     borders=None,
                     min_gauss=False,
@@ -225,7 +225,7 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
     :param num_of_levels: number of contour-lines to use
     :param color_space: colorspace to merge the images in "rgb" or "lab"
     :param use_c_implementation: run the merging process with the c-implementation
-    :param use_alpha_sum: use the "fair" merging process
+    :param mode: sets the mode to use. Defaults is hierarchic and defaults to hierarchic
     :param blending_operator: operator with which the pictures are merged
     :param borders: min and max color from colorspace which is used from 0. to 1.
     :param lower_border: min alpha value which is shown in each vis
@@ -254,7 +254,7 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
                                  lvl_white=0 if barrier else 1)
     return combine_multiple_images_hierarchic(blending_operator, img_list, z_list, color_space=color_space,
                                               use_c_implementation=use_c_implementation,
-                                              use_alpha_sum=use_alpha_sum)
+                                              mode=mode)
 
 
 def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, z_sum=None, colorschemes=None,
@@ -262,7 +262,7 @@ def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, z_sum=No
                 num_of_levels=8,
                 color_space="lab",
                 use_c_implementation=False,
-                use_alpha_sum=True,
+                mode="hierarchic",
                 blending_operator=hierarchic_blending_operator.porter_duff_source_over,
                 borders=None,
                 min_gauss=False,
@@ -281,7 +281,7 @@ def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, z_sum=No
     :param num_of_levels: number of contour-lines to use
     :param color_space: colorspace to merge the images in "rgb" or "lab"
     :param use_c_implementation: run the merging process with the c-implementation
-    :param use_alpha_sum: use the "fair" merging process if set true
+    :param mode: sets the mode to use. Defaults is hierarchic and defaults to hierarchic
     :param blending_operator: operator with which the pictures are merged
     :param borders: min and max color from colorspace which is used from 0. to 1.
     """
@@ -292,7 +292,7 @@ def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, z_sum=No
     if colorschemes is None:
         colorschemes = color_schemes.get_colorbrewer_schemes()
     img, alpha = calculate_image(z_list, z_min, z_max, z_sum, colorschemes, method, num_of_levels, color_space,
-                                 use_c_implementation, use_alpha_sum, blending_operator, borders, min_gauss=min_gauss,
+                                 use_c_implementation, mode, blending_operator, borders, min_gauss=min_gauss,
                                  lower_border=lower_border, lower_border_to_cut=lower_border_to_cut)
     extent = [*helper.get_x_values(distributions), *helper.get_y_values(distributions)]
 
@@ -329,13 +329,13 @@ def _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j
 
 
 def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space="lab",
-                                       use_c_implementation=False, use_alpha_sum=True, *args,
+                                       use_c_implementation=False, mode="hierarchic", *args,
                                        **kwargs):
     """
     Merges multiple pictures into one using a given blending-operator, the specific grade of blending is weighted by
     the z_values of each image. The pixel of each image is merged by its weight. From lowest to highest
 
-    :param use_alpha_sum: merges the images with in a fair way strict by percentage
+    :param mode: sets the mode to use. Defaults is hierarchic and defaults to hierarchic
     :param use_c_implementation: only works with rgb and lab at the moment
     :param blending_operator: operator which is used to mix the images point by point
     :param images: [image_1, image_2, ... , image_n]
@@ -351,9 +351,17 @@ def combine_multiple_images_hierarchic(blending_operator, images, z_values, colo
         start = time.time()
     if use_c_implementation:
         logger.debug("Using C-Implementation")
-        if use_alpha_sum:
+        if mode.lower() == "alpha_sum":
+            logger.debug("Mode: alpha_sum")
             reduce, z_new = c_picture_worker.call_hierarchic_alpha_sum_merge(images, z_values, color_space)
+        elif mode.lower() == "hierarchic":
+            logger.debug("Mode: hierarchic")
+            reduce, z_new = c_picture_worker.call_hierarchic_merge(images, z_values, color_space)
+        elif mode.lower() == "alpha_sum_quad":
+            logger.debug("Mode: alpha_sum_quad")
+            reduce, z_new = c_picture_worker.call_l2_sum_merge(images, z_values, color_space)
         else:
+            logger.debug("Mode: hierarchic---default")
             reduce, z_new = c_picture_worker.call_hierarchic_merge(images, z_values, color_space)
         if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
             end = time.time()

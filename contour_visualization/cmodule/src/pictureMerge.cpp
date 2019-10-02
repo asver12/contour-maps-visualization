@@ -170,54 +170,43 @@ void pictureMerge::mmMultQuadraticHierarchic(int m, int n, int numberOfMatrizes,
                                              double **weights, double *C,
                                              double *weightsC,
                                              const char *colorspace) {
-  //#pragma omp parallel for
+#pragma omp parallel for
   for (int i = 0; i < m * n; ++i) {
     std::vector<double> _rgb(3);
     std::vector<double> _cieLab1(3);
     double alpha_sum = 0;
     for (int l = 0; l < numberOfMatrizes; ++l) {
       if (_checkIfSingleColor(&matrizes[l][i * 3])) {
-        alpha_sum += weights[l][i];
+        alpha_sum += pow(weights[l][i], 2.);
+        weights[l][i] = pow(weights[l][i], 2.);
       }
     }
     std::vector<double> _new_color(3);
     bool foundColor = false;
     int start_index = 0;
     for (int k = 0; k < numberOfMatrizes; ++k) {
-      if (foundColor == false) {
-        if (_checkIfSingleColor(&matrizes[k][i * 3])) {
-          if (strncmp(colorspace, "lab", 3) == 0) {
-            _getCieLab(&matrizes[k][i * 3], _cieLab1.data());
-            for (int j = 0; j < 3; ++j) {
-              _new_color[j] = _cieLab1[j];
-            }
-          } else {
-            for (int j = 0; j < 3; ++j) {
-              _new_color[j] = matrizes[k][i * 3 + j];
-            }
+      if (_checkIfSingleColor(&matrizes[k][i * 3])) {
+        if (strncmp(colorspace, "lab", 3) == 0) {
+          _getCieLab(&matrizes[k][i * 3], _cieLab1.data());
+          for (int j = 0; j < 3; ++j) {
+            _new_color[j] = _cieLab1[j] * (weights[k][i] / alpha_sum);
           }
-
-          foundColor = true;
-          start_index = k + 1;
-          break;
-        }
-      } else {
-        if (_checkIfSingleColor(&matrizes[k][i * 3])) {
+        } else {
           for (int j = 0; j < 3; ++j) {
             _new_color[j] =
-                _new_color[j] *
-                pow(weights[start_index - 1][i] / alpha_sum, double(2.));
+                matrizes[k][i * 3 + j] * (weights[k][i] / alpha_sum);
           }
         }
+
+        foundColor = true;
+        start_index = k + 1;
+        break;
       }
     }
     if (foundColor) {
       for (int k = start_index; k < numberOfMatrizes; ++k) {
-        mix_color_l2(_new_color.data(), &matrizes[k][i * 3], _cieLab1.data(),
-                     &weights[k][i], &alpha_sum, colorspace);
-      }
-      for (int k = 0; k < 3; ++k) {
-        _new_color[k] = sqrt(_new_color[k]);
+        mix_color(_new_color.data(), &matrizes[k][i * 3], _cieLab1.data(),
+                  &weights[k][i], &alpha_sum, colorspace);
       }
       if (strncmp(colorspace, "lab", 3) == 0) {
         _getRgb(_new_color.data(), _rgb.data());

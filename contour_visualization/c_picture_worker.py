@@ -8,9 +8,9 @@ try:
     local_dir = os.path.dirname(__file__)
     lib = cdll.LoadLibrary(local_dir + "/libs/libblendingOperators.so")
 except OSError as e:
-    print("okay")
     logger.warning("File libsvmBlend.so could not be found under {}".format(
         os.path.dirname(__file__) + "/libs/libblendingOperators.so"))
+    raise e
 
 dtype = np.float
 
@@ -113,6 +113,7 @@ lib.mmMultQuadraticHierarchic.restype = None
 
 
 def call_l2_sum_merge(matrizes, weights, colorspace="lab"):
+    print("GO!")
     num_of_matrizes, m, n = len(matrizes), len(matrizes[0]), len(matrizes[0][0])
 
     new_matrix = np.zeros(matrizes[0].shape, dtype=np.float)
@@ -170,11 +171,11 @@ def call_hierarchic_alpha_sum_merge(matrizes, weights, colorspace="lab"):
 
 
 if __name__ == "__main__":
-    from src import color_schemes
-    from src import picture_contours
-    from src import helper
+    from contour_visualization import color_schemes
+    from contour_visualization import picture_contours
+    from contour_visualization import helper
 
-    from src import hierarchic_blending_operator
+    from contour_visualization import hierarchic_blending_operator
 
     x_min, x_max = -10, 10
     y_min, y_max = -10, 10
