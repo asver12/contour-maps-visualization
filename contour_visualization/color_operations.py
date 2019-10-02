@@ -1,38 +1,21 @@
 import numpy as np
 
 from contour_visualization import helper, color_schemes
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-def blend_color(blending_operator, color_1, color_2, *args, **kwargs):
-    """
-    blends rgb color with blendingoperator and returns rgb255 data
-
-    :param blending_operator: blending operator which is used to calculate new color, color_1, color_2, alpha
-    :param color_1: first color
-    :param color_2: second color
-    :param alpha: alpha value
-    :return: new color
-    """
-    return blending_operator(color_1, color_2, *args, **kwargs)
-
-
-def get_colorcodes(colorschemes):
-    """
-    Works only for brewer-colorschemes atm
-    :param colorschemes: brewer-colorscheme
-    :return:
-    """
-    return [color_schemes.get_main_color(i)[-1] for i in colorschemes]
-
-
-def map_colors(x, colormap, levels, split=True, verbose=False):
+def map_colors(x, colormap, levels, split=True, lower_border=None):
     """
     Maps a color to given levels
+
 
     :param x: 2D-Array with values to map
     :param colormap: colors for each level
     :param levels: levels at which colors are seperated
     :param split: defines if alpha stay in the color_map or not
+    :param lower_border: border at which to cut, if not given uses all level given
     :return: 2D-Array with rgba color-codes
     """
     # if the areas between the contourlines are filled
@@ -43,11 +26,23 @@ def map_colors(x, colormap, levels, split=True, verbose=False):
         alpha_new = np.zeros([len(x), len(x[0]), 1])
         for i in range(len(x)):
             for j in range(len(x[0])):
-                index = helper.find_index(x[i][j], levels, verbose=verbose)
-                x_new[i][j] = colormap[index][:split_number]
-                if verbose:
-                    print(x_new[i][j])
-                alpha_new[i][j] = colormap[index][3]
+                if lower_border:
+                    if lower_border < x[i][j]:
+                        index = helper.find_index(x[i][j], levels)
+                        x_new[i][j] = colormap[index][:split_number]
+                        logger.debug(x_new[i][j])
+                        alpha_new[i][j] = colormap[index][3]
+                    else:
+                        index = helper.find_index(x[i][j], levels)
+                        x_new[i][j] = color_schemes.get_white()[:-1]
+                        alpha_new[i][j] = colormap[index][3]
+                else:
+                    index = helper.find_index(x[i][j], levels)
+                    x_new[i][j] = colormap[index][:split_number]
+                    logger.debug(x_new[i][j])
+                    alpha_new[i][j] = colormap[index][3]
+                logger.debug(x_new[i][j])
+
     else:
         raise Exception("{} + 1 !={}".format(len(levels), len(colormap)))
     return x_new, alpha_new

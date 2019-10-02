@@ -19,7 +19,7 @@ def _check_constrains(min_value, max_value):
         raise Exception("{} is not accepted as maximum value".format(max_value))
 
 
-def create_monochromatic_colorscheme(startcolor, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):
+def create_monochromatic_colorscheme(startcolor, levels, min_value=0, max_value=1, lvl_white=1):
     """
     Generates a monochromatic colorscheme from a startcolor. The values of the startcolor are in rgba
     with r,g,b in [0,1] and a = 1
@@ -156,6 +156,10 @@ def get_background_colorbrewer_scheme():
     return {_colorscheme: create_color_brewer_colorscheme, _colorscheme_name: "grey"}
 
 
+def get_white():
+    return np.array([1., 1., 1., 1.])
+
+
 def get_main_color(colorscheme):
     """
     returns all colors in a brewer color-scheme
@@ -183,7 +187,7 @@ def _interpolate(color_array, start, end, position):
     return (1. - percentage) * np.array(color_array[start]) + percentage * np.array(color_array[end])
 
 
-def create_color_brewer_colorscheme(colorscheme_name, levels, lvl_white=1, verbose=False):
+def create_color_brewer_colorscheme(colorscheme_name, levels, lvl_white=1):
     """
     creates a colorscheme based on the sequential colorschemes from http://colorbrewer2.org.
 
@@ -216,12 +220,12 @@ def create_color_brewer_colorscheme(colorscheme_name, levels, lvl_white=1, verbo
         else:
             colors.append(np.append(_interpolate(_colorscheme, start, end, i * num_of_colors), 1.0))
     for i in range(lvl_white if lvl_white < len(levels) else len(levels)):
-        colors[i] = np.array([1., 1., 1., 1.])
+        colors[i] = get_white()
     logger.debug("{}[{}]".format(colors, len(colors)))
     return colors
 
 
-def create_hsl_colorscheme(startcolor, levels, min_value=0, max_value=1, lvl_white=1, verbose=False):
+def create_hsl_colorscheme(startcolor, levels, min_value=0, max_value=1, lvl_white=1):
     """
 
     :param startcolor:

@@ -97,10 +97,12 @@ def get_color_middlepoint(iso_lines, min_value, max_value, normalize=True):
 
 
 def get_colorgrid(X, colorscheme, method="equal_density", num_of_levels=8, min_value=0., max_value=1., split=True,
+                  min_border=None,
                   *args,
                   **kwargs):
     """
     Takes a 2D-Grid and maps it to a color-scheme. Therefor it generates a colormap with the given number of levels
+
 
     :param X: 2D-Grid with single values
     :param colorscheme: color-scheme from color_schemes
@@ -108,6 +110,7 @@ def get_colorgrid(X, colorscheme, method="equal_density", num_of_levels=8, min_v
     :param min_value:
     :param max_value:
     :param split:
+    :param min_border:
     :return: 2D-Grid with color values from the color-scheme
     """
     check_constrains(min_value, max_value)
@@ -120,7 +123,7 @@ def get_colorgrid(X, colorscheme, method="equal_density", num_of_levels=8, min_v
 
     # replace points in image with matching colors
     levels = get_iso_levels(X, method=method, num_of_levels=num_of_levels)
-    return color_operations.map_colors(X, colormap, levels, split)
+    return color_operations.map_colors(X, colormap, levels, split, lower_border=min_border)
 
 
 def convert_rgb_image(img, color_space):
@@ -164,7 +167,7 @@ def convert_color_space_to_rgb(img, color_space):
 
 
 def generate_img_list(z_list, z_min, z_max, colorschemes, lower_border, upper_border, method="equal_density",
-                      num_of_levels=8):
+                      num_of_levels=8, *args, **kwargs):
     """
     generates a grid of hights with the corresponding colors from a density-grid.
     It maps the interval of each density into the total density-interval
@@ -181,7 +184,7 @@ def generate_img_list(z_list, z_min, z_max, colorschemes, lower_border, upper_bo
     :param z_min: minimal density occurring in the z_list min([density_1, ... , density_n])
     :param z_max: maximal density occurring in the z_list max([density_1, ... , density_n])
     :param colorschemes: colorschemes to use for each density-grid
-    :param lower_border: minimum factor for colorselection
+    :param global_border: minimum factor for colorselection
     :param upper_border: maximum factor for colorselection
     :param method: method with which the distance between contour-lines is chosen
     :param num_of_levels: number of contour-lines to use
@@ -191,23 +194,28 @@ def generate_img_list(z_list, z_min, z_max, colorschemes, lower_border, upper_bo
     for z, colorscheme in zip(z_list, colorschemes):
         z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
         z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
-        img, _ = get_colorgrid(z, **colorscheme, method=method, num_of_levels=num_of_levels, min_value=z_min_weight,
+        img, _ = get_colorgrid(z, *args, **colorscheme, method=method, num_of_levels=num_of_levels,
+                               min_value=z_min_weight,
                                max_value=z_max_weight,
-                               split=True)
+                               split=True, **kwargs)
         img_list.append(img)
     return img_list
 
 
-def calculate_image(z_list, z_min, z_max, colorschemes,
+def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
                     method="equal_density",
                     num_of_levels=8,
                     color_space="lab",
                     use_c_implementation=False,
                     use_alpha_sum=True,
                     blending_operator=hierarchic_blending_operator.porter_duff_source_over,
-                    borders=None):
+                    borders=None,
+                    min_gauss=False,
+                    lower_border=None,
+                    lower_border_to_cut=0):
     """
     generates a merged image from multiple density-grids with same shape
+
 
     :param z_list: list of densities each one with the same shape [density_1, ... , density_n]
     :param z_min: minimal density occurring in the z_list min([density_1, ... , density_n])
@@ -220,28 +228,46 @@ def calculate_image(z_list, z_min, z_max, colorschemes,
     :param use_alpha_sum: use the "fair" merging process
     :param blending_operator: operator with which the pictures are merged
     :param borders: min and max color from colorspace which is used from 0. to 1.
+    :param lower_border: min alpha value which is shown in each vis
     :return: colorgrid with merged image
     """
     if borders is None:
         borders = [0, 1]
+    if lower_border:
+        if min_gauss:
+            barrier = z_max
+            for i in z_list:
+                new_barrier = get_iso_levels(i, method, lower_border)[lower_border_to_cut]
+                if new_barrier < barrier:
+                    barrier = new_barrier
+        else:
+            barrier = get_iso_levels(z_sum, method, lower_border)[lower_border_to_cut]
+    else:
+        barrier = None
     if len(z_list) == 1:
         img, _ = get_colorgrid(z_list[0], **colorschemes[0], num_of_levels=num_of_levels, min_value=borders[0],
-                               max_value=borders[1], split=True)
+                               max_value=borders[1], split=True, min_border=barrier,
+                               lvl_white=0 if barrier else 1)
         return img, z_list[0]
-    img_list = generate_img_list(z_list, z_min, z_max, colorschemes, *borders, method, num_of_levels)
+    img_list = generate_img_list(z_list, z_min, z_max, colorschemes, *borders, method, num_of_levels,
+                                 min_border=barrier,
+                                 lvl_white=0 if barrier else 1)
     return combine_multiple_images_hierarchic(blending_operator, img_list, z_list, color_space=color_space,
                                               use_c_implementation=use_c_implementation,
                                               use_alpha_sum=use_alpha_sum)
 
 
-def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, colorschemes=None,
+def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, z_sum=None, colorschemes=None,
                 method="equal_density",
                 num_of_levels=8,
                 color_space="lab",
                 use_c_implementation=False,
                 use_alpha_sum=True,
                 blending_operator=hierarchic_blending_operator.porter_duff_source_over,
-                borders=None):
+                borders=None,
+                min_gauss=False,
+                lower_border=None,
+                lower_border_to_cut=0):
     """
     inputs the contours of distributions into an matplotlib axis object
 
@@ -262,11 +288,12 @@ def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, colorsch
     if z_list is None:
         z_list = helper.generate_distribution_grids(distributions)
     if z_min is None:
-        z_min, z_max, _ = helper.generate_weights(z_list)
+        z_min, z_max, z_sum = helper.generate_weights(z_list)
     if colorschemes is None:
         colorschemes = color_schemes.get_colorbrewer_schemes()
-    img, alpha = calculate_image(z_list, z_min, z_max, colorschemes, method, num_of_levels, color_space,
-                                 use_c_implementation, use_alpha_sum, blending_operator, borders)
+    img, alpha = calculate_image(z_list, z_min, z_max, z_sum, colorschemes, method, num_of_levels, color_space,
+                                 use_c_implementation, use_alpha_sum, blending_operator, borders, min_gauss=min_gauss,
+                                 lower_border=lower_border, lower_border_to_cut=lower_border_to_cut)
     extent = [*helper.get_x_values(distributions), *helper.get_y_values(distributions)]
 
     ax.imshow(img, extent=extent, origin='lower')
