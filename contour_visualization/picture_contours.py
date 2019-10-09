@@ -1,4 +1,3 @@
-import sys
 import numpy as np
 from skimage import color
 
@@ -11,7 +10,7 @@ c_handler.setFormatter(c_format)
 logger.addHandler(c_handler)
 
 from contour_visualization import color_operations, hierarchic_blending_operator, helper, c_picture_worker, \
-    color_schemes
+    color_schemes, iso_lines
 
 try:
     from density_visualization import iso_levels
@@ -32,53 +31,6 @@ def check_constrains(min_value, max_value):
         raise Exception("{} is not accepted as maximum value".format(max_value))
 
 
-def get_iso_levels(x, method="equal_density", num_of_levels=8):
-    """
-    generates iso-lines to a given 2D-array
-
-    :param x: picture to generate iso-levels to
-    :param method: normal or equal_density available right now
-    :param num_of_levels: number of iso-lines to generate
-    :return: array([iso_line_1, ... , iso_line_n ])
-    """
-    if "density_visualization.iso_levels" not in sys.modules:
-        logger.info("module density_visualization.iso_levels is missing. Normal iso-levels have been used")
-        return normal_iso_level(x, num_of_levels)
-    if method == "equal_density":
-        return iso_levels.equi_prob_per_level(x, k=num_of_levels)
-    elif method == "equal_horizontal":
-        return iso_levels.equi_horizontal_prob_per_level(x, k=num_of_levels)
-    elif method == "equal_value":
-        return iso_levels.equi_value(x, k=num_of_levels)
-    return normal_iso_level(x, num_of_levels)
-
-
-def normal_iso_level(x, num_of_levels):
-    return np.linspace(np.min(x), np.max(x), num_of_levels + 2)[1:-1]
-
-
-def norm_levels(interval_array, new_min_value=0., new_max_value=1., old_min=None, old_max=None):
-    """
-    transforms an array of levels which exists inside of an interval into another given interval.
-    When no start interval is given it is created by the min and max from the input array
-
-    :param interval_array: array of values to normalize
-    :param new_min_value: new minimum value of the interval
-    :param new_max_value: new maximum value of the interval
-    :param old_min: (optional) minimum of the interval from which interval_array is taken
-    :param old_max: (optional) maximum of the interval from which interval_array is taken
-    :return: array in transformed into the interval [new_min_value, new_max_value]
-    """
-    interval_array = np.asarray(interval_array)
-    if interval_array.size != 0:
-        if old_min is None or old_max is None:
-            return np.interp(interval_array, (min(interval_array), max(interval_array)), (new_min_value, new_max_value))
-        else:
-            return np.interp(interval_array, (old_min, old_max), (new_min_value, new_max_value))
-    else:
-        return interval_array
-
-
 def get_color_middlepoint(iso_lines, min_value, max_value, normalize=True):
     """
     calculates the middlepoints all adjacent points in the list.
@@ -90,7 +42,7 @@ def get_color_middlepoint(iso_lines, min_value, max_value, normalize=True):
     :return: array of middlepoints with size len(iso_lines) - 1
     """
     if normalize:
-        norm = norm_levels(iso_lines, min_value, max_value)
+        norm = helper.norm_levels(iso_lines, min_value, max_value)
     else:
         norm = iso_lines
     return [(i + j) / 2 for i, j in zip(norm[:-1], norm[1:])]
@@ -117,12 +69,12 @@ def get_colorgrid(X, colorscheme, method="equal_density", num_of_levels=8, min_v
     logger.debug("Min: {} | Max: {}".format(min_value, max_value))
 
     # generate colors to chose from
-    norm = get_iso_levels(X, method=method, num_of_levels=num_of_levels + 2)
+    norm = iso_lines.get_iso_levels(X, method=method, num_of_levels=num_of_levels + 2)
     norm = get_color_middlepoint(norm, min_value, max_value)
     colormap = colorscheme(levels=norm, *args, **kwargs)
 
     # replace points in image with matching colors
-    levels = get_iso_levels(X, method=method, num_of_levels=num_of_levels)
+    levels = iso_lines.get_iso_levels(X, method=method, num_of_levels=num_of_levels)
     return color_operations.map_colors(X, colormap, levels, split, lower_border=min_border)
 
 

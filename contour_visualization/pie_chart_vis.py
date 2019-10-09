@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib.patches import Wedge
 
-from contour_visualization import helper, color_schemes, picture_contours
+from contour_visualization import helper, color_schemes, iso_lines
 
 import logging
 
@@ -83,7 +83,7 @@ def input_image(ax, distribution, z_sum=None, num_of_pies_x=10, num_of_pies_y=0,
         z_max = np.max(z_sum)
     if iso_level:
         if 0 <= level_to_cut <= iso_level:
-            barrier = picture_contours.get_iso_levels(z_sum, contour_method, iso_level)[level_to_cut]
+            barrier = iso_lines.get_iso_levels(z_sum, contour_method, iso_level)[level_to_cut]
         else:
             logger.warning(
                 "Point to cut[{}] is not in iso-level[{}]. Using pie-charts without point to cut".format(level_to_cut,

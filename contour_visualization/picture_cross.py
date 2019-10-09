@@ -6,7 +6,7 @@ from scipy import linalg
 import itertools
 import pyclipper
 
-from contour_visualization import helper, picture_contours, color_schemes, hierarchic_blending_operator
+from contour_visualization import helper, picture_contours, color_schemes, hierarchic_blending_operator, iso_lines
 
 import logging
 
@@ -69,13 +69,9 @@ def generate_polys(cross_lines):
     return crosses
 
 
-def get_fill_regions(cross_lines, int_condition=1000):
-    # create rectangles
-    crosses = generate_polys(cross_lines)
-
-    # find all intersections of 2 polygons
+def poly_union(polys):
     poly_return = []
-    for cross_1, cross_2 in itertools.combinations(crosses, 2):
+    for cross_1, cross_2 in itertools.combinations(polys, 2):
         for a in cross_1:
             for b in cross_2:
                 try:
@@ -84,13 +80,15 @@ def get_fill_regions(cross_lines, int_condition=1000):
                         poly_return.append([solution[0], [a[1], b[1]], [a[2], b[2]]])
                 except:
                     pass
+    return poly_return
 
-    # find all intersections of the intersections from 2 polygons
+
+def multi_union(poly_return, number_gaussians, int_condition=1000):
     new_polys = poly_return
     i = 0
     next_polys = []
-    while len(new_polys) > 2 and i < len(crosses) + 1 and len(next_polys) < int_condition:
-        logger.debug("Iteration[{}]: {}".format(len(crosses), i))
+    while len(new_polys) > 2 and i <  + 1 and len(next_polys) < int_condition:
+        logger.debug("Iteration[{}]: {}".format(number_gaussians, i))
         logger.debug("Polys: {}".format(len(new_polys)))
         next_polys = []
         com_polys = []
@@ -108,6 +106,17 @@ def get_fill_regions(cross_lines, int_condition=1000):
         logger.debug("Total Polys: {}".format(len(poly_return)))
         new_polys = next_polys
         i += 1
+    return poly_return
+
+
+def get_fill_regions(cross_lines, *args, **kwargs):
+    # create rectangles
+    crosses = generate_polys(cross_lines)
+    # find all intersections of 2 polygons
+    poly_return = poly_union(crosses)
+
+    # find all intersections of the intersections from 2 polygons
+    poly_return = multi_union(poly_return, len(crosses), *args, **kwargs)
 
     # wichtig für Masterarbeit als Bild um Aufbau zu erklären
     # fig, axes = plt.subplots(1, 1, sharex='col', sharey='row')
@@ -147,7 +156,7 @@ def generate_line(axis, line, color_points=None, borders=None):
         contour_lines_colorscheme = color_schemes.get_colorbrewer_schemes()[0]
         color_points = contour_lines_colorscheme["colorscheme"](
             contour_lines_colorscheme["colorscheme_name"],
-            picture_contours.norm_levels(np.linspace(0, 1, len(line) - 1), *borders), lvl_white=0)
+            helper.norm_levels(np.linspace(0, 1, len(line) - 1), *borders), lvl_white=0)
     points = np.array(list(zip(line[:-1], line[1:])))
     logger.debug("Points: {}".format(points))
     for j, i in enumerate(points):
@@ -303,7 +312,7 @@ def get_line(gaussian, eigenvalue, eigenvector, colorscheme, min_value=0., max_v
     logger.debug("Cross-limits: {}".format(limits))
     _, _, z_list = gaussian.get_density_grid(x_min=limits.x_min, x_max=limits.x_max, y_min=limits.y_min,
                                              y_max=limits.y_max)
-    iso_level = picture_contours.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels)
+    iso_level = iso_lines.get_iso_levels(z_list, method=method, num_of_levels=num_of_levels)
     logger.debug("------------------------------------------------------------")
     logger.debug("First Part of Line {}".format(first_line))
     logger.debug("Second Part of Line {}".format(second_line))
@@ -311,8 +320,8 @@ def get_line(gaussian, eigenvalue, eigenvector, colorscheme, min_value=0., max_v
     logger.debug("------------------------------------------------------------")
     first_line = split_half_line(gaussian, *first_line, iso_level)
     second_line = split_half_line(gaussian, *second_line, iso_level[::-1])
-    iso_lvl = picture_contours.get_iso_levels(gaussian.get_density_grid()[2], method=method,
-                                              num_of_levels=num_of_levels + 2)
+    iso_lvl = iso_lines.get_iso_levels(gaussian.get_density_grid()[2], method=method,
+                                                             num_of_levels=num_of_levels + 2)
     logger.debug("Min/max-value: {}/{}".format(min_value, max_value))
     logger.debug("Iso-Level for colors: {}".format(iso_lvl))
     iso_lvl = picture_contours.get_color_middlepoint(iso_lvl, min_value, max_value)

@@ -222,3 +222,25 @@ def generate_brewer_plot_from_gaussians(z_list, color_schemes_list):
                                                     colorscheme=colorscheme)
         z_color_list.append(z_color)
     return z_color_list
+
+
+def norm_levels(interval_array, new_min_value=0., new_max_value=1., old_min=None, old_max=None):
+    """
+    transforms an array of levels which exists inside of an interval into another given interval.
+    When no start interval is given it is created by the min and max from the input array
+
+    :param interval_array: array of values to normalize
+    :param new_min_value: new minimum value of the interval
+    :param new_max_value: new maximum value of the interval
+    :param old_min: (optional) minimum of the interval from which interval_array is taken
+    :param old_max: (optional) maximum of the interval from which interval_array is taken
+    :return: array in transformed into the interval [new_min_value, new_max_value]
+    """
+    interval_array = np.asarray(interval_array)
+    if interval_array.size != 0:
+        if old_min is None or old_max is None:
+            return np.interp(interval_array, (min(interval_array), max(interval_array)), (new_min_value, new_max_value))
+        else:
+            return np.interp(interval_array, (old_min, old_max), (new_min_value, new_max_value))
+    else:
+        return interval_array
