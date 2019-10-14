@@ -449,7 +449,7 @@ def generate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%",
     lower_border = borders[0]
     upper_border = borders[1]
     z_weights = []
-    for z, colorscheme in zip(z_list, colorschemes):
+    for z in z_list:
         z_min_weight = (upper_border - lower_border) * (np.min(z) - z_min) / (z_max - z_min) + lower_border
         z_max_weight = (upper_border - lower_border) * (np.max(z) - z_min) / (z_max - z_min) + lower_border
         z_weights.append([z_min_weight, z_max_weight])

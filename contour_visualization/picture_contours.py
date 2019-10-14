@@ -189,11 +189,11 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
         if min_gauss:
             barrier = z_max
             for i in z_list:
-                new_barrier = get_iso_levels(i, method, lower_border)[lower_border_to_cut]
+                new_barrier = iso_lines.get_iso_levels(i, method, lower_border)[lower_border_to_cut]
                 if new_barrier < barrier:
                     barrier = new_barrier
         else:
-            barrier = get_iso_levels(z_sum, method, lower_border)[lower_border_to_cut]
+            barrier = iso_lines.get_iso_levels(z_sum, method, lower_border)[lower_border_to_cut]
     else:
         barrier = None
     if len(z_list) == 1:

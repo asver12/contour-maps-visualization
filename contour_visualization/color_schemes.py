@@ -241,7 +241,10 @@ def create_hsl_colorscheme(startcolor, levels, min_value=0, max_value=1, lvl_whi
     norm_levels = np.linspace(min_value, max_value, len(levels))
     logger.debug("Min: {} | Max: {}".format(min_value, max_value))
     hsv = color.rgb2hsv(rgb)
-    color_scheme = [color.hsv2rgb([[[float(hsv[0][0][0]), float(i), float(1 - i)]]]) for i in norm_levels]
+    if all([i == 0. for i in startcolor]):
+        color_scheme = [color.hsv2rgb([[[float(hsv[0][0][0]), float(hsv[0][0][1]), float(1 - i)]]]) for i in norm_levels]
+    else:
+        color_scheme = [color.hsv2rgb([[[float(hsv[0][0][0]), float(i), float(hsv[0][0][2])]]]) for i in norm_levels]
     color_scheme = [np.array([i[0][0][0], i[0][0][1], i[0][0][2], 1.]) for i in color_scheme]
     for i in range(lvl_white + 1 if lvl_white < len(levels) else len(levels)):
         color_scheme[i] = np.array([1., 1., 1., 1.])
