@@ -2,7 +2,11 @@ import numpy as np
 from skimage import measure
 
 from contour_visualization import helper
-from contour_visualization.picture_contours import get_iso_levels, logger, norm_levels
+from contour_visualization.iso_lines import get_iso_levels
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def generate_contour_lines(ax, X, distribution_limits, contour_lines_colorscheme, contour_lines_method="equal_density",
@@ -48,4 +52,4 @@ def find_contour_lines(X, levels):
 
 def get_contour_line_colors(contour_lines_colorscheme, level, borders):
     return contour_lines_colorscheme["colorscheme"](contour_lines_colorscheme["colorscheme_name"],
-                                                    norm_levels(level, *borders), lvl_white=0)
+                                                    helper.norm_levels(level, *borders), lvl_white=0)
