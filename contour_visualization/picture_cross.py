@@ -10,8 +10,6 @@ from contour_visualization import helper, picture_contours, color_schemes, hiera
 
 import logging
 
-from contour_visualization.helper import Limits
-
 logger = logging.getLogger(__name__)
 
 
@@ -308,7 +306,7 @@ def get_line(gaussian, eigenvalue, eigenvector, colorscheme, min_value=0., max_v
         return min(line, key=lambda k: k[index])[index], max(line, key=lambda k: k[index])[index]
 
     first_line, second_line = get_half_lines(gaussian.means, eigenvector, eigenvalue)
-    limits = Limits(*get_limits([*first_line, *second_line], 0), *get_limits([*first_line, *second_line], 1))
+    limits = helper.Limits(*get_limits([*first_line, *second_line], 0), *get_limits([*first_line, *second_line], 1))
     logger.debug("Cross-limits: {}".format(limits))
     _, _, z_list = gaussian.get_density_grid(x_min=limits.x_min, x_max=limits.x_max, y_min=limits.y_min,
                                              y_max=limits.y_max)
