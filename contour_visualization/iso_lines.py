@@ -9,8 +9,8 @@ import importlib
 
 iso_mod = importlib.util.find_spec("iso_levels")
 iso_lvl_exists = iso_mod is not None
-
-from density_visualization import iso_levels
+if iso_lvl_exists:
+    from density_visualization import iso_levels
 
 
 def get_iso_levels(x, method="equal_density", num_of_levels=8):
