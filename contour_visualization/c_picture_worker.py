@@ -113,7 +113,6 @@ lib.mmMultQuadraticHierarchic.restype = None
 
 
 def call_l2_sum_merge(matrizes, weights, colorspace="lab"):
-    print("GO!")
     num_of_matrizes, m, n = len(matrizes), len(matrizes[0]), len(matrizes[0][0])
 
     new_matrix = np.zeros(matrizes[0].shape, dtype=np.float)

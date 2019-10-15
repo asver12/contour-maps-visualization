@@ -1,5 +1,7 @@
 import numpy as np
 
+from contour_visualization import ddhp_color_blending
+
 
 def porter_duff_source_over(color_1, color_2, alpha):
     """
@@ -42,7 +44,15 @@ def blend_one_point_color(color_1, color_2, alpha, position=0):
     return color_1
 
 
-def simple_color_mult(color_1, color_2, verbose=False):
+def max_color(color_1, alpha_1, color_2, alpha_2):
+    if alpha_1 > alpha_2:
+        return color_1, alpha_1
+    if alpha_2 >= alpha_1:
+        return color_2, alpha_2
+    return color_1 * alpha_1 + color_2 * alpha_2, (alpha_1 + alpha_2) / 2
+
+
+def simple_color_mult(color_1, alpha_1, color_2, alpha_2):
     """
     multiplies the colors to achieve a new color C
     if one of the colors is not np.array it will be transformed
@@ -54,9 +64,14 @@ def simple_color_mult(color_1, color_2, verbose=False):
     """
     color_1 = np.asarray(color_1, dtype=np.float)
     color_2 = np.asarray(color_2, dtype=np.float)
-    if verbose:
-        print("c1: {} c2: {} = {}".format(color_1, color_2, color_1 * color_2))
-    return color_1 * color_2
+    return color_1 * color_2, alpha_1 * alpha_2
+
+
+def ddhp_color_operator(color_1, z_1, color_2, z_2):
+    alpha = z_1 / (z_1 + z_2)
+    if z_1 > z_2:
+        return ddhp_color_blending.blend_rgb_colors(color_1, color_2, alpha), z_1 * alpha + z_2 * (1 - alpha)
+    return ddhp_color_blending.blend_rgb_colors(color_2, color_1, z_2 / (z_1 + z_2)), z_1 * alpha + z_2 * (1 - alpha)
 
 
 def hsv_color_operator(color_1, color_2, alpha=.5, position=0):
@@ -73,11 +88,11 @@ def hsv_color_operator_deg(color_1, color_2, alpha):
         return color_2
     if color_2[2] == 0:
         return color_1
-    color_1[0] = color_1[0]*alpha + color_2[0]*(1-alpha)
+    color_1[0] = color_1[0] * alpha + color_2[0] * (1 - alpha)
     return color_1
 
-def lab_color_operator(color_1,color_2, alpha):
+
+def lab_color_operator(color_1, color_2, alpha):
     color_1[0] = 1.
     color_1[1] = color_2[1]
     return color_1
-

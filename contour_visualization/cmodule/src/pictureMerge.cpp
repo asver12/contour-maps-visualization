@@ -177,8 +177,8 @@ void pictureMerge::mmMultQuadraticHierarchic(int m, int n, int numberOfMatrizes,
     double alpha_sum = 0;
     for (int l = 0; l < numberOfMatrizes; ++l) {
       if (_checkIfSingleColor(&matrizes[l][i * 3])) {
-        alpha_sum += pow(weights[l][i], 2.);
-        weights[l][i] = pow(weights[l][i], 2.);
+        alpha_sum += weights[l][i];  // pow(weights[l][i], 2.);
+        // weights[l][i] = pow(weights[l][i], 2.);
       }
     }
     std::vector<double> _new_color(3);
