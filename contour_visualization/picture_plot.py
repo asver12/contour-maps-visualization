@@ -175,7 +175,7 @@ def plot_image(ax, distributions,
     :param color_space:
     :param use_c_implementation:
     :param contour_mode: sets the mode to use. Defaults is hierarchic and defaults to hierarchic
-    :param blending_operator:
+    :param blending_operator: blendingoperator to use. Only works for blending in python
     :param contour_min_gauss: if min of min gauss is used when True else from z_sum
     :param contour_lower_border_to_cut: defines the global lower border at which to cut the particular each image
     :param contour_lower_border_lvl: def at which level the iso-border gets cut

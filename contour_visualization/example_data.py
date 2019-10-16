@@ -45,7 +45,7 @@ def generate_four_moving_gaussians(x_min=-10, x_max=10, y_min=-10, y_max=10, siz
         z_lists.append(z_list)
         z_sums.append(z_sum)
         gaussians.append([copy.deepcopy(i) for i in int_gaussians])
-    return z_lists, z_sums, gaussians, color_codes
+    return gaussians
 
 
 def generate_default_gaussian(means=None, cov_matrix=None, *args, **kwargs):
