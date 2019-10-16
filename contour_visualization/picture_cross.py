@@ -462,7 +462,8 @@ def generate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%",
 
 
 def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, broad=3, same_broad=True,
-                  length_multiplier=2. * np.sqrt(2.), borders=None, color_space="lab", fill=True, *args,
+                  length_multiplier=2. * np.sqrt(2.), borders=None, color_space="lab", fill=True, cross_fill=True,
+                  *args,
                   **kwargs):
     if not hasattr(gaussians[0], "cov_matrix"):
         raise AttributeError("[{}] property 'cov_matrix is missing".format(type(gaussians[0])))
@@ -473,7 +474,7 @@ def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, broad=3, sa
                                    borders, *args,
                                    **kwargs)
     for cross in cross_lines:
-        generate_cross(ax, *cross[:4], fill=fill, *args, **kwargs)
+        generate_cross(ax, *cross[:4], fill=cross_fill, *args, **kwargs)
     if fill:
         fill_between_lines(ax, cross_lines, color_space=color_space)
 
