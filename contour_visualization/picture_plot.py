@@ -302,11 +302,10 @@ def plot_image(ax, distributions,
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
     if names is None:
-        names = [chr(i + 97) for i in range(len(colors))]
+        names = [chr(i + 65) for i in range(len(colors))]
     custom_lines = [Line2D([0], [0], color=colors[i], lw=legend_lw) for i in
                     range(len(colors))]
-    axis.legend(custom_lines, names,
-                loc='upper left', frameon=False)
+    axis.legend(custom_lines, names, frameon=False)
 
 
 def _evaluate_colors(colorschemes, number_of_schemes):
