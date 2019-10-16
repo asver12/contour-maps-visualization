@@ -1,4 +1,5 @@
 import copy
+import inspect
 
 import numpy as np
 from matplotlib.patches import Polygon
@@ -85,7 +86,7 @@ def multi_union(poly_return, number_gaussians, int_condition=1000):
     new_polys = poly_return
     i = 0
     next_polys = []
-    while len(new_polys) > 2 and i <  + 1 and len(next_polys) < int_condition:
+    while len(new_polys) > 2 and i < + 1 and len(next_polys) < int_condition:
         logger.debug("Iteration[{}]: {}".format(number_gaussians, i))
         logger.debug("Polys: {}".format(len(new_polys)))
         next_polys = []
@@ -147,7 +148,7 @@ def fill_between_lines(axis, cross_lines, color_space="lab"):
                                fill=True, edgecolor=color, facecolor=color, aa=True, linewidth=0.))
 
 
-def generate_line(axis, line, color_points=None, borders=None):
+def generate_line(axis, line, color_points=None, borders=None, fill=True, linewidth=0., use_colors=True):
     if borders is None:
         borders = [0.5, 1]
     if color_points is None:
@@ -160,7 +161,9 @@ def generate_line(axis, line, color_points=None, borders=None):
     for j, i in enumerate(points):
         idx = [0, 2, 3, 1]
         axis.add_patch(Polygon(np.array(i).reshape(4, 2)[idx], closed=True,
-                               fill=True, edgecolor=color_points[j], facecolor=color_points[j], aa=True, linewidth=0.))
+                               fill=fill, edgecolor=color_points[j] if use_colors else "black",
+                               facecolor=color_points[j] if use_colors else "black", aa=True,
+                               linewidth=linewidth))
 
 
 def get_half_lines(middlepoint, direction, length):
@@ -319,7 +322,7 @@ def get_line(gaussian, eigenvalue, eigenvector, colorscheme, min_value=0., max_v
     first_line = split_half_line(gaussian, *first_line, iso_level)
     second_line = split_half_line(gaussian, *second_line, iso_level[::-1])
     iso_lvl = iso_lines.get_iso_levels(gaussian.get_density_grid()[2], method=method,
-                                                             num_of_levels=num_of_levels + 2)
+                                       num_of_levels=num_of_levels + 2)
     logger.debug("Min/max-value: {}/{}".format(min_value, max_value))
     logger.debug("Iso-Level for colors: {}".format(iso_lvl))
     iso_lvl = picture_contours.get_color_middlepoint(iso_lvl, min_value, max_value)
@@ -388,13 +391,16 @@ def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad="5%", sam
                                                   colorscheme,
                                                   min_value, max_value,
                                                   *args,
-                                                  **kwargs)
+                                                  **{key: value for key, value in kwargs.items()
+                                                     if key in inspect.signature(get_line).parameters}
+                                                  )
     line_short, colors_short, z_lvl_short = get_line(gaussian, eigenvalues[1],
                                                      eigenvectors[0],
                                                      colorscheme,
                                                      min_value, max_value,
                                                      *args,
-                                                     **kwargs)
+                                                     **{key: value for key, value in kwargs.items()
+                                                        if key in inspect.signature(get_line).parameters})
     broad_short, broad_long = get_broad(broad, line_short, line_long, same_broad)
     # since eigenvectors are orthogonal to each other just change them for the direction
     rectangle_1 = generate_rectangle_from_line(line_short, eigenvectors[1], broad_short)
@@ -432,11 +438,11 @@ def get_broad(broad, line_short, line_long, same_length=True):
     return broad_short, broad_long
 
 
-def generate_cross(axis, line_1, line_2, colors_1, colors_2):
+def generate_cross(axis, line_1, line_2, colors_1, colors_2, *args, **kwargs):
     logger.debug("Len Line 1: {}".format(len(line_1)))
     logger.debug("Len Colors 1: {}".format(len(colors_1)))
-    generate_line(axis, line_1, colors_1)
-    generate_line(axis, line_2, colors_2)
+    generate_line(axis, line_1, colors_1, *args, **kwargs)
+    generate_line(axis, line_2, colors_2, *args, **kwargs)
 
 
 def generate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%", same_broad=True,
@@ -456,8 +462,7 @@ def generate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%",
 
 
 def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, broad=3, same_broad=True,
-                  length_multiplier=2. * np.sqrt(2.), borders=None,
-                  color_space="lab", *args,
+                  length_multiplier=2. * np.sqrt(2.), borders=None, color_space="lab", fill=True, *args,
                   **kwargs):
     if not hasattr(gaussians[0], "cov_matrix"):
         raise AttributeError("[{}] property 'cov_matrix is missing".format(type(gaussians[0])))
@@ -468,8 +473,9 @@ def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, broad=3, sa
                                    borders, *args,
                                    **kwargs)
     for cross in cross_lines:
-        generate_cross(ax, *cross[:4])
-    fill_between_lines(ax, cross_lines, color_space=color_space)
+        generate_cross(ax, *cross[:4], fill=fill, *args, **kwargs)
+    if fill:
+        fill_between_lines(ax, cross_lines, color_space=color_space)
 
 
 def convert_color_to_rgb(color, color_space="lab"):

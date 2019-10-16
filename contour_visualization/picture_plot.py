@@ -52,7 +52,7 @@ def plot_image_variations(distribution, plot_titles=False, titles="", colors="",
                ylabel=ylabel, pie_charts=True, *args, **kwargs)
 
 
-def plot_images(distributions, plot_titles=False, titles="", colors="", columns=5, xlabels="", ylabels="",
+def plot_images(distributions, plot_titles=False, titles="", colors="", columns=5, xlabels="", ylabels="", legend=True,
                 bottom=0.0,
                 left=0., right=2.,
                 top=2.,
@@ -83,7 +83,7 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
         if ylabels:
             ylabel = ylabels
         fig, ax = plt.subplots(1, 1)
-        plot_image(ax, distributions[0], title=title, legend=True, legend_colors=color_legend, xlabel=xlabel,
+        plot_image(ax, distributions[0], title=title, legend=legend, legend_colors=color_legend, xlabel=xlabel,
                    ylabel=ylabel, *args, **kwargs)
         fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
     else:
@@ -98,7 +98,7 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
                 if ylabels:
                     ylabel = ylabels[i * columns]
                 try:
-                    plot_image(ax, distributions[i * columns], title=title, legend=True,
+                    plot_image(ax, distributions[i * columns], title=title, legend=legend,
                                legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, *args,
                                **kwargs)
                 except Exception as e:
@@ -112,7 +112,7 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
                     if ylabels:
                         ylabel = ylabels[j + i * columns]
                     try:
-                        plot_image(ax[j], sub_gaussians[j], *args, title=title, legend=True,
+                        plot_image(ax[j], sub_gaussians[j], *args, title=title, legend=legend,
                                    legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, **kwargs)
                     except Exception as e:
                         print(e)
@@ -141,6 +141,7 @@ def plot_image(ax, distributions,
                cross_same_broad=True,
                cross_length_multiplier=2. * np.sqrt(2.),
                cross_borders=None,
+               cross_fill=True,
                pie_charts=False, pie_num=25, pie_angle=90, pie_chart_colors=None, pie_chart_modus="light",
                pie_chart_scale=1.,
                pie_chart_borders=None,
@@ -153,7 +154,8 @@ def plot_image(ax, distributions,
                legend_names=None,
                title="",
                xlabel="",
-               ylabel=""
+               ylabel="",
+               *args, **kwargs
                ):
     """
     Plots an image at a given axe, can plot contour, contour-lines, crosses and pie-charts
@@ -185,6 +187,7 @@ def plot_image(ax, distributions,
     :param cross_same_broad: if True calculates the broad of the crosses depending by the smaller cross
     :param cross_length_multiplier: is multiplied with the lenght to create bigger or smaller crosses
     :param cross_borders:
+    :param cross_fill: if cross is filled with color or not
     :param pie_charts:
     :param pie_num:
     :param pie_angle: where the pie-chart begins 0 is horizontal beginning on the right 90 beginns at the top
@@ -272,7 +275,7 @@ def plot_image(ax, distributions,
             picture_cross.input_crosses(ax, distributions, z_list, z_min, z_max, cross_colorscheme, cross_width,
                                         cross_same_broad,
                                         cross_length_multiplier,
-                                        cross_borders)
+                                        cross_borders, linewidth=linewidth, *args, **kwargs)
         if contour_lines:
             if isinstance(contour_line_colorscheme, dict):
                 picture_contour_lines.generate_contour_lines(ax, z_sum, limits,
@@ -300,7 +303,7 @@ def plot_image(ax, distributions,
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
     if names is None:
-        names = [chr(i+97) for i in range(len(colors))]
+        names = [chr(i + 97) for i in range(len(colors))]
     custom_lines = [Line2D([0], [0], color=colors[i], lw=legend_lw) for i in
                     range(len(colors))]
     axis.legend(custom_lines, names,
