@@ -170,7 +170,7 @@ def plot_image(ax, distributions,
     :param linewidth:
     :param contours:
     :param contour_colorscheme:
-    :param contour_method:
+    :param contour_method: method with which the colored areas are calculated
     :param contour_lvl:
     :param color_space:
     :param use_c_implementation:

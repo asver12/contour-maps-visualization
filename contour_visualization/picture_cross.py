@@ -1,4 +1,3 @@
-import copy
 import inspect
 
 import numpy as np
@@ -116,12 +115,6 @@ def get_fill_regions(cross_lines, *args, **kwargs):
 
     # find all intersections of the intersections from 2 polygons
     poly_return = multi_union(poly_return, len(crosses), *args, **kwargs)
-
-    # wichtig für Masterarbeit als Bild um Aufbau zu erklären
-    # fig, axes = plt.subplots(1, 1, sharex='col', sharey='row')
-    # for poly in polys:
-    #     axes.plot(*poly[0].exterior.xy)
-    # logger.debug("Points: {}".format(points))
     return poly_return
 
 

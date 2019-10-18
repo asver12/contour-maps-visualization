@@ -180,6 +180,7 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
     :param mode: sets the mode to use. Defaults is hierarchic and defaults to hierarchic
     :param blending_operator: operator with which the pictures are merged
     :param borders: min and max color from colorspace which is used from 0. to 1.
+    :param min_gauss: uses minimal gaussian for the threshold for colors
     :param lower_border: min alpha value which is shown in each vis
     :return: colorgrid with merged image
     """
@@ -197,11 +198,11 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
     else:
         barrier = None
     if len(z_list) == 1:
-        img, _ = get_colorgrid(z_list[0], **colorschemes[0], num_of_levels=num_of_levels, min_value=borders[0],
+        img, _ = get_colorgrid(z_list[0], **colorschemes[0], method=method, num_of_levels=num_of_levels, min_value=borders[0],
                                max_value=borders[1], split=True, min_border=barrier,
                                lvl_white=0 if barrier else 1)
         return img, z_list[0]
-    img_list = generate_img_list(z_list, z_min, z_max, colorschemes, *borders, method, num_of_levels,
+    img_list = generate_img_list(z_list, z_min, z_max, colorschemes, *borders, method=method, num_of_levels=num_of_levels,
                                  min_border=barrier,
                                  lvl_white=0 if barrier else 1)
     return combine_multiple_images_hierarchic(blending_operator, img_list, z_list, color_space=color_space,
