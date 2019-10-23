@@ -17,6 +17,10 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - cmake
+            # update to a compiler supporting c++11
+            - g++-7
+      env:
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
       script:
         - cd contour_visualization/cmodule
         - mkdir build
@@ -24,5 +28,5 @@ matrix:
         - cmake ..
         - make
         - ./tests/runBlendingOperatorsUnitTests
-        - ./tests/runBlendingOperatorsUnitTests
+        - ./tests/runPictureMergeUnitTests
         - ctest
