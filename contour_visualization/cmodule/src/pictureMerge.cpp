@@ -155,11 +155,11 @@ void mix_color_l2(double *color_1, double *color_2, double *_cieLab,
     if (strncmp(colorspace, "lab", 3) == 0) {
       _getCieLab(color_2, _cieLab);
       for (int j = 0; j < 3; ++j) {
-        color_1[j] += _cieLab[j] * pow((*weight) / (*sum_weight), 2.);
+        color_1[j] += _cieLab[j] * (pow((*weight), 2.) / (*sum_weight));
       }
     } else {
       for (int j = 0; j < 3; ++j) {
-        color_1[j] += color_2[j] * pow((*weight) / (*sum_weight), 2.);
+        color_1[j] += color_2[j] * (pow((*weight), 2.) / (*sum_weight));
       }
     }
   }
@@ -177,10 +177,11 @@ void pictureMerge::mmMultQuadraticHierarchic(int m, int n, int numberOfMatrizes,
     double alpha_sum = 0;
     for (int l = 0; l < numberOfMatrizes; ++l) {
       if (_checkIfSingleColor(&matrizes[l][i * 3])) {
-        alpha_sum += weights[l][i];  // pow(weights[l][i], 2.);
+        alpha_sum += pow(weights[l][i], 2);  // pow(weights[l][i], 2.);
         // weights[l][i] = pow(weights[l][i], 2.);
       }
     }
+    printf("%f\n", alpha_sum);
     std::vector<double> _new_color(3);
     bool foundColor = false;
     int start_index = 0;
@@ -189,12 +190,12 @@ void pictureMerge::mmMultQuadraticHierarchic(int m, int n, int numberOfMatrizes,
         if (strncmp(colorspace, "lab", 3) == 0) {
           _getCieLab(&matrizes[k][i * 3], _cieLab1.data());
           for (int j = 0; j < 3; ++j) {
-            _new_color[j] = _cieLab1[j] * (weights[k][i] / alpha_sum);
+            _new_color[j] = _cieLab1[j] * (pow(weights[k][i], 2.) / alpha_sum);
           }
         } else {
           for (int j = 0; j < 3; ++j) {
             _new_color[j] =
-                matrizes[k][i * 3 + j] * (weights[k][i] / alpha_sum);
+                matrizes[k][i * 3 + j] * (pow(weights[k][i], 2.) / alpha_sum);
           }
         }
 

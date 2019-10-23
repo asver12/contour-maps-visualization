@@ -209,13 +209,13 @@ if __name__ == "__main__":
     colors = [Z_color, Z_color_1]
     result = callSimpleMerge(colors, matrizen)
     print(result[1])
-    print(picture_contours.combine_multiple_images_hierarchic(hierarchic_blending_operator.porter_duff_source_over,
-                                                              [Z_color, Z_color_1], [Z,
-                                                                                     Z_1])[1])
+    print(picture_contours.combine_multiple_images_hierarchic([Z_color, Z_color_1], [Z,
+                                                                                     Z_1],
+                                                              hierarchic_blending_operator.porter_duff_source_over)[1])
     print(result[0])
-    print(picture_contours.combine_multiple_images_hierarchic(hierarchic_blending_operator.porter_duff_source_over,
-                                                              [Z_color, Z_color_1], [Z,
-                                                                                     Z_1])[0])
+    print(picture_contours.combine_multiple_images_hierarchic([Z_color, Z_color_1], [Z,
+                                                                                     Z_1],
+                                                              hierarchic_blending_operator.porter_duff_source_over)[0])
 
     print("---------------------------------------------------------")
     print("-----------------Hierarchic------------------------------")
@@ -224,5 +224,5 @@ if __name__ == "__main__":
     weights = [Z, Z_1, Z_2]
     results = call_hierarchic_merge(pics, weights)
     print(results[0])
-    print(picture_contours.combine_multiple_images_hierarchic(hierarchic_blending_operator.porter_duff_source_over,
-                                                              pics, weights)[0])
+    print(picture_contours.combine_multiple_images_hierarchic(pics, weights,
+                                                              hierarchic_blending_operator.porter_duff_source_over)[0])

@@ -141,6 +141,8 @@ def plot_image(ax, distributions,
                cross_same_broad=True,
                cross_length_multiplier=2. * np.sqrt(2.),
                cross_borders=None,
+               cross_blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+               cross_mode="hierarchic",
                pie_charts=False, pie_num=25, pie_angle=90, pie_chart_colors=None, pie_chart_modus="light",
                pie_chart_scale=1.,
                pie_chart_borders=None,
@@ -151,8 +153,8 @@ def plot_image(ax, distributions,
                legend_lw=2,
                legend_colors=None,
                legend_names=None,
-               xlim = None,
-               ylim = None,
+               xlim=None,
+               ylim=None,
                title="",
                xlabel="",
                ylabel="",
@@ -189,6 +191,7 @@ def plot_image(ax, distributions,
     :param cross_length_multiplier: is multiplied with the lenght to create bigger or smaller crosses
     :param cross_borders:
     :param cross_fill: if cross is filled with color or not
+    :param cross_blending_operator: blending operotor for cross-intersections
     :param pie_charts:
     :param pie_num:
     :param pie_angle: where the pie-chart begins 0 is horizontal beginning on the right 90 beginns at the top
@@ -275,7 +278,8 @@ def plot_image(ax, distributions,
             picture_cross.input_crosses(ax, distributions, z_list, z_min, z_max, cross_colorscheme, cross_width,
                                         cross_same_broad,
                                         cross_length_multiplier,
-                                        cross_borders, linewidth=linewidth, *args, **kwargs)
+                                        cross_borders, linewidth=linewidth,
+                                        blending_operator=cross_blending_operator, mode=cross_mode, color_space=color_space, *args, **kwargs)
         if contour_lines:
             if isinstance(contour_line_colorscheme, dict):
                 picture_contour_lines.generate_contour_lines(ax, z_sum, limits,
@@ -298,7 +302,8 @@ def plot_image(ax, distributions,
             pie_chart_vis.input_image(ax, distributions, z_sum, pie_num, angle=pie_angle,
                                       colorschemes=pie_chart_colors, modus=pie_chart_modus, borders=pie_chart_borders,
                                       iso_level=pie_chart_iso_level, level_to_cut=pie_chart_level_to_cut,
-                                      contour_method=pie_chart_contour_method, scale=pie_chart_scale, set_limit=False, xlim=xlim, ylim=ylim)
+                                      contour_method=pie_chart_contour_method, scale=pie_chart_scale, set_limit=False,
+                                      xlim=xlim, ylim=ylim)
 
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
