@@ -4,14 +4,21 @@
 
 class TestFunctions : public testing::Test {
  protected:
-  void compareArrays(double* resultVector, double* expectedVector, int size) {
+  void compareValues(double* resultValues, double* expectedValues, int size) {
     for (int i = 0; i < size; ++i) {
-      EXPECT_NEAR(resultVector[i], expectedVector[i], 0.0001);
+      EXPECT_NEAR(resultValues[i], expectedValues[i], 0.0001);
+    }
+  }
+  // for readability reasons. So it becomes more cleare where the error is
+  void compareWeights(double* resultWeights, double* expectedWeights,
+                      int size) {
+    for (int i = 0; i < size; ++i) {
+      EXPECT_NEAR(resultWeights[i], expectedWeights[i], 0.0001);
     }
   }
 };
 
-TEST_F(TestFunctions, isAllTheSame) {
+TEST_F(TestFunctions, hierarchicIsAllTheSame) {
   char colorspace[] = "rgb";
   int m = 2;
   int n = 3;
@@ -37,11 +44,11 @@ TEST_F(TestFunctions, isAllTheSame) {
   pictureMerge::mmMultHierarchic(m, n, 2, matrizes.data(), weights.data(),
                                  resultValues.data(), resultWeights.data(),
                                  &colorspace[0]);
-  compareArrays(resultValues.data(), &expectedValues[0], m * n * 3);
-  compareArrays(resultWeights.data(), &expectedWeights[0], m * n);
+  compareValues(resultValues.data(), &expectedValues[0], m * n * 3);
+  compareWeights(resultWeights.data(), &expectedWeights[0], m * n);
 }
 
-TEST_F(TestFunctions, isCorrectResultInRgb) {
+TEST_F(TestFunctions, hierarchicIsCorrectResultInRgb) {
   char colorspace[] = "rgb";
   int m = 2;
   int n = 3;
@@ -77,11 +84,11 @@ TEST_F(TestFunctions, isCorrectResultInRgb) {
   pictureMerge::mmMultHierarchic(m, n, 4, matrizes.data(), weights.data(),
                                  resultValues.data(), resultWeights.data(),
                                  &colorspace[0]);
-  compareArrays(resultValues.data(), &expectedValues[0], m * n * 3);
-  compareArrays(resultWeights.data(), &expectedWeights[0], m * n);
+  compareValues(resultValues.data(), &expectedValues[0], m * n * 3);
+  compareWeights(resultWeights.data(), &expectedWeights[0], m * n);
 }
 
-TEST_F(TestFunctions, isCorrectResultInLab) {
+TEST_F(TestFunctions, hierarchicIsCorrectResultInLab) {
   char colorspace[] = "lab";
   int m = 2;
   int n = 3;
@@ -121,8 +128,76 @@ TEST_F(TestFunctions, isCorrectResultInLab) {
   pictureMerge::mmMultHierarchic(m, n, 4, matrizes.data(), weights.data(),
                                  resultValues.data(), resultWeights.data(),
                                  &colorspace[0]);
-  compareArrays(resultValues.data(), &expectedValues[0], m * n * 3);
-  compareArrays(resultWeights.data(), &expectedWeights[0], m * n);
+  compareValues(resultValues.data(), &expectedValues[0], m * n * 3);
+  compareWeights(resultWeights.data(), &expectedWeights[0], m * n);
+}
+
+TEST_F(TestFunctions, alphaSumIsAllTheSame) {
+  char colorspace[] = "rgb";
+  int m = 2;
+  int n = 3;
+  double a[] = {1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
+  double b[] = {3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1};
+
+  std::vector<double*> matrizes(4);
+  matrizes[0] = &a[0];
+  matrizes[1] = &b[0];
+
+  double aWeights[] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+  double bWeights[] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+  std::vector<double*> weights(4);
+  weights[0] = &aWeights[0];
+  weights[1] = &bWeights[0];
+
+  double expectedValues[] = {2., 2., 2., 2., 2., 2., 2., 2., 2.,
+                             2., 2., 2., 2., 2., 2., 2., 2., 2.};
+
+  double expectedWeights[] = {1., 1., 1., 1., 1., 1.};
+  std::vector<double> resultValues(m * n * 3, 0), resultWeights(m * n, 0);
+
+  pictureMerge::mmMultSumHierarchic(m, n, 2, matrizes.data(), weights.data(),
+                                    resultValues.data(), resultWeights.data(),
+                                    &colorspace[0]);
+  compareValues(resultValues.data(), &expectedValues[0], m * n * 3);
+  compareWeights(resultWeights.data(), &expectedWeights[0], m * n);
+}
+
+TEST_F(TestFunctions, alphaSumIsCorrectResultInRgb) {
+  char colorspace[] = "rgb";
+  int m = 2;
+  int n = 3;
+  double a[] = {1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
+  double b[] = {3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1};
+  double c[] = {3, 6, 9, 9, 6, 3, 3, 6, 9, 9, 6, 3, 3, 6, 9, 9, 6, 3};
+  double d[] = {4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4};
+
+  std::vector<double*> matrizes(4);
+  matrizes[0] = &a[0];
+  matrizes[1] = &b[0];
+  matrizes[2] = &c[0];
+  matrizes[3] = &d[0];
+
+  double aWeights[] = {0.1, 0.4, 0.1, 0.2, 0.2, 0.1};
+  double bWeights[] = {0.2, 0.3, 0.1, 0.4, 0.2, 0.1};
+  double cWeights[] = {0.3, 0.2, 0.1, 0.6, 0.1, 0.2};
+  double dWeights[] = {0.4, 0.1, 0.1, 0.8, 0.1, 0.2};
+
+  std::vector<double*> weights(4);
+  weights[0] = &aWeights[0];
+  weights[1] = &bWeights[0];
+  weights[2] = &cWeights[0];
+  weights[3] = &dWeights[0];
+  double expectedValues[] = {3.2,  4.0, 4.8,      3.500000, 3.000000, 2.500000,
+                             2.75, 3.5, 4.25,     5.0,      4.0,      3.0,
+                             2.5,  3.0, 3.500000, 5.0,      4.0,      3.0};
+  double expectedWeights[] = {1., 1., 1., 1., 1., 1.};
+  std::vector<double> resultValues(m * n * 3, 0), resultWeights(m * n, 0);
+
+  pictureMerge::mmMultSumHierarchic(m, n, 4, matrizes.data(), weights.data(),
+                                    resultValues.data(), resultWeights.data(),
+                                    &colorspace[0]);
+  compareValues(resultValues.data(), &expectedValues[0], m * n * 3);
+  compareWeights(resultWeights.data(), &expectedWeights[0], m * n);
 }
 
 int main(int argc, char** argv) {
