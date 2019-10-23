@@ -145,12 +145,14 @@ def plot_image(ax, distributions,
                pie_chart_scale=1.,
                pie_chart_borders=None,
                pie_chart_iso_level=40,
-               pie_chart_level_to_cut=0,
+               pie_chart_level_to_cut=1,
                pie_chart_contour_method="equal_density",
                legend=False,
                legend_lw=2,
                legend_colors=None,
                legend_names=None,
+               xlim = None,
+               ylim = None,
                title="",
                xlabel="",
                ylabel="",
@@ -208,9 +210,8 @@ def plot_image(ax, distributions,
     """
 
     if contours or contour_lines or pie_charts or crosses:
-        limits = helper.get_limits(distributions)
-        z_list = helper.generate_distribution_grids(distributions, x_min=limits.x_min, x_max=limits.x_max,
-                                                    y_min=limits.y_min, y_max=limits.y_max)
+        limits = helper.get_limits(distributions, xlim, ylim)
+        z_list = helper.generate_distribution_grids(distributions, limits=limits)
         z_min, z_max, z_sum = helper.generate_weights(z_list)
 
         # # to avoid a stretched y-axis
@@ -261,7 +262,7 @@ def plot_image(ax, distributions,
                                              blending_operator=blending_operator, borders=contour_borders,
                                              min_gauss=contour_min_gauss,
                                              lower_border=contour_lower_border_lvl,
-                                             lower_border_to_cut=contour_lower_border_to_cut)
+                                             lower_border_to_cut=contour_lower_border_to_cut, xlim=xlim, ylim=ylim)
             else:
                 picture_contours.input_image(ax, distributions, z_list, z_min, z_max, z_sum, contour_colorscheme,
                                              contour_method,
@@ -269,7 +270,7 @@ def plot_image(ax, distributions,
                                              blending_operator=blending_operator, borders=contour_borders,
                                              min_gauss=contour_min_gauss,
                                              lower_border=contour_lower_border_lvl,
-                                             lower_border_to_cut=contour_lower_border_to_cut)
+                                             lower_border_to_cut=contour_lower_border_to_cut, xlim=xlim, ylim=ylim)
         if crosses:
             picture_cross.input_crosses(ax, distributions, z_list, z_min, z_max, cross_colorscheme, cross_width,
                                         cross_same_broad,
@@ -297,7 +298,7 @@ def plot_image(ax, distributions,
             pie_chart_vis.input_image(ax, distributions, z_sum, pie_num, angle=pie_angle,
                                       colorschemes=pie_chart_colors, modus=pie_chart_modus, borders=pie_chart_borders,
                                       iso_level=pie_chart_iso_level, level_to_cut=pie_chart_level_to_cut,
-                                      contour_method=pie_chart_contour_method, scale=pie_chart_scale, set_limit=False)
+                                      contour_method=pie_chart_contour_method, scale=pie_chart_scale, set_limit=False, xlim=xlim, ylim=ylim)
 
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
