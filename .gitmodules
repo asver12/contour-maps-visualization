@@ -1,3 +1,6 @@
 [submodule "density_visualization"]
 	path = density_visualization
 	url = https://ci.inf-i2.uni-jena.de/m7luph2/density_visualization.git
+[submodule "gtest"]
+	path = gtest
+	url = https://github.com/google/googletest.git

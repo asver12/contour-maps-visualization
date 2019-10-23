@@ -9,6 +9,7 @@ matrix:
         - python -m pytest
     - git:
         submodules: false
+      os: linux
       language: c++
       compiler: gcc
       addons:
@@ -17,10 +18,12 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - cmake
-            # update to a compiler supporting c++11
             - g++-7
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+      before_install:
+        - eval "${MATRIX_EVAL}"
+        - git submodule update --init gtest
       script:
         - cd contour_visualization/cmodule
         - mkdir build
@@ -29,4 +32,3 @@ matrix:
         - make
         - ./tests/runBlendingOperatorsUnitTests
         - ./tests/runPictureMergeUnitTests
-        - ctest
