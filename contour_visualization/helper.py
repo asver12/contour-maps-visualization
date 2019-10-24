@@ -1,3 +1,4 @@
+import inspect
 import random
 from collections import namedtuple
 from typing import List
@@ -104,17 +105,25 @@ def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, 
 Limits = namedtuple("Limits", ["x_min", "x_max", "y_min", "y_max"])
 
 
-def get_limits(distributions):
-    return Limits(*get_x_values(distributions), *get_y_values(distributions))
+def get_limits(distributions, xlim=None, ylim=None):
+    if xlim:
+        x_limits = xlim
+    else:
+        x_limits = get_x_values(distributions)
+    if ylim:
+        y_limits = ylim
+    else:
+        y_limits = get_y_values(distributions)
+    return Limits(*x_limits, *y_limits)
 
 
-def generate_distribution_grids(distributions: List[Distribution], x_min=None, x_max=None, y_min=None, y_max=None):
-    if x_min is None:
-        x_min, x_max = get_x_values(distributions)
-    if y_min is None:
-        y_min, y_max = get_y_values(distributions)
-    return [distribution.get_density_grid(x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max)[2] for distribution in
-            distributions]
+def generate_distribution_grids(distributions: List[Distribution], limits: Limits = None):
+    if limits is None:
+        limits = get_limits(distributions)
+    return [
+        distribution.get_density_grid(x_min=limits.x_min, x_max=limits.x_max, y_min=limits.y_min, y_max=limits.y_max)[2]
+        for distribution in
+        distributions]
 
 
 def generate_gaussians_old(gaussians):
@@ -244,3 +253,7 @@ def norm_levels(interval_array, new_min_value=0., new_max_value=1., old_min=None
             return np.interp(interval_array, (old_min, old_max), (new_min_value, new_max_value))
     else:
         return interval_array
+
+
+def filter_kwargs(function, **kwargs):
+    return {key: value for key, value in kwargs.items() if key in inspect.signature(function).parameters}

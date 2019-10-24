@@ -52,7 +52,7 @@ def plot_image_variations(distribution, plot_titles=False, titles="", colors="",
                ylabel=ylabel, pie_charts=True, *args, **kwargs)
 
 
-def plot_images(distributions, plot_titles=False, titles="", colors="", columns=5, xlabels="", ylabels="",
+def plot_images(distributions, plot_titles=False, titles="", colors="", columns=5, xlabels="", ylabels="", legend=True,
                 bottom=0.0,
                 left=0., right=2.,
                 top=2.,
@@ -83,7 +83,7 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
         if ylabels:
             ylabel = ylabels
         fig, ax = plt.subplots(1, 1)
-        plot_image(ax, distributions[0], title=title, legend=True, legend_colors=color_legend, xlabel=xlabel,
+        plot_image(ax, distributions[0], title=title, legend=legend, legend_colors=color_legend, xlabel=xlabel,
                    ylabel=ylabel, *args, **kwargs)
         fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
     else:
@@ -98,7 +98,7 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
                 if ylabels:
                     ylabel = ylabels[i * columns]
                 try:
-                    plot_image(ax, distributions[i * columns], title=title, legend=True,
+                    plot_image(ax, distributions[i * columns], title=title, legend=legend,
                                legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, *args,
                                **kwargs)
                 except Exception as e:
@@ -112,7 +112,7 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
                     if ylabels:
                         ylabel = ylabels[j + i * columns]
                     try:
-                        plot_image(ax[j], sub_gaussians[j], *args, title=title, legend=True,
+                        plot_image(ax[j], sub_gaussians[j], *args, title=title, legend=legend,
                                    legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, **kwargs)
                     except Exception as e:
                         print(e)
@@ -141,19 +141,24 @@ def plot_image(ax, distributions,
                cross_same_broad=True,
                cross_length_multiplier=2. * np.sqrt(2.),
                cross_borders=None,
+               cross_blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+               cross_mode="hierarchic",
                pie_charts=False, pie_num=25, pie_angle=90, pie_chart_colors=None, pie_chart_modus="light",
                pie_chart_scale=1.,
                pie_chart_borders=None,
                pie_chart_iso_level=40,
-               pie_chart_level_to_cut=0,
+               pie_chart_level_to_cut=1,
                pie_chart_contour_method="equal_density",
                legend=False,
                legend_lw=2,
                legend_colors=None,
                legend_names=None,
+               xlim=None,
+               ylim=None,
                title="",
                xlabel="",
-               ylabel=""
+               ylabel="",
+               *args, **kwargs
                ):
     """
     Plots an image at a given axe, can plot contour, contour-lines, crosses and pie-charts
@@ -169,12 +174,12 @@ def plot_image(ax, distributions,
     :param linewidth:
     :param contours:
     :param contour_colorscheme:
-    :param contour_method:
+    :param contour_method: method with which the colored areas are calculated
     :param contour_lvl:
     :param color_space:
     :param use_c_implementation:
     :param contour_mode: sets the mode to use. Defaults is hierarchic and defaults to hierarchic
-    :param blending_operator:
+    :param blending_operator: blendingoperator to use. Only works for blending in python
     :param contour_min_gauss: if min of min gauss is used when True else from z_sum
     :param contour_lower_border_to_cut: defines the global lower border at which to cut the particular each image
     :param contour_lower_border_lvl: def at which level the iso-border gets cut
@@ -185,6 +190,8 @@ def plot_image(ax, distributions,
     :param cross_same_broad: if True calculates the broad of the crosses depending by the smaller cross
     :param cross_length_multiplier: is multiplied with the lenght to create bigger or smaller crosses
     :param cross_borders:
+    :param cross_fill: if cross is filled with color or not
+    :param cross_blending_operator: blending operotor for cross-intersections
     :param pie_charts:
     :param pie_num:
     :param pie_angle: where the pie-chart begins 0 is horizontal beginning on the right 90 beginns at the top
@@ -206,9 +213,8 @@ def plot_image(ax, distributions,
     """
 
     if contours or contour_lines or pie_charts or crosses:
-        limits = helper.get_limits(distributions)
-        z_list = helper.generate_distribution_grids(distributions, x_min=limits.x_min, x_max=limits.x_max,
-                                                    y_min=limits.y_min, y_max=limits.y_max)
+        limits = helper.get_limits(distributions, xlim, ylim)
+        z_list = helper.generate_distribution_grids(distributions, limits=limits)
         z_min, z_max, z_sum = helper.generate_weights(z_list)
 
         # # to avoid a stretched y-axis
@@ -259,7 +265,7 @@ def plot_image(ax, distributions,
                                              blending_operator=blending_operator, borders=contour_borders,
                                              min_gauss=contour_min_gauss,
                                              lower_border=contour_lower_border_lvl,
-                                             lower_border_to_cut=contour_lower_border_to_cut)
+                                             lower_border_to_cut=contour_lower_border_to_cut, xlim=xlim, ylim=ylim)
             else:
                 picture_contours.input_image(ax, distributions, z_list, z_min, z_max, z_sum, contour_colorscheme,
                                              contour_method,
@@ -267,12 +273,13 @@ def plot_image(ax, distributions,
                                              blending_operator=blending_operator, borders=contour_borders,
                                              min_gauss=contour_min_gauss,
                                              lower_border=contour_lower_border_lvl,
-                                             lower_border_to_cut=contour_lower_border_to_cut)
+                                             lower_border_to_cut=contour_lower_border_to_cut, xlim=xlim, ylim=ylim)
         if crosses:
             picture_cross.input_crosses(ax, distributions, z_list, z_min, z_max, cross_colorscheme, cross_width,
                                         cross_same_broad,
                                         cross_length_multiplier,
-                                        cross_borders)
+                                        cross_borders, linewidth=linewidth,
+                                        blending_operator=cross_blending_operator, mode=cross_mode, color_space=color_space, *args, **kwargs)
         if contour_lines:
             if isinstance(contour_line_colorscheme, dict):
                 picture_contour_lines.generate_contour_lines(ax, z_sum, limits,
@@ -295,16 +302,16 @@ def plot_image(ax, distributions,
             pie_chart_vis.input_image(ax, distributions, z_sum, pie_num, angle=pie_angle,
                                       colorschemes=pie_chart_colors, modus=pie_chart_modus, borders=pie_chart_borders,
                                       iso_level=pie_chart_iso_level, level_to_cut=pie_chart_level_to_cut,
-                                      contour_method=pie_chart_contour_method, scale=pie_chart_scale, set_limit=False)
+                                      contour_method=pie_chart_contour_method, scale=pie_chart_scale, set_limit=False,
+                                      xlim=xlim, ylim=ylim)
 
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
     if names is None:
-        names = [chr(i+97) for i in range(len(colors))]
+        names = [chr(i + 65) for i in range(len(colors))]
     custom_lines = [Line2D([0], [0], color=colors[i], lw=legend_lw) for i in
                     range(len(colors))]
-    axis.legend(custom_lines, names,
-                loc='upper left', frameon=False)
+    axis.legend(custom_lines, names, frameon=False)
 
 
 def _evaluate_colors(colorschemes, number_of_schemes):

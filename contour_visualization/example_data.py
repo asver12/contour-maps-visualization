@@ -21,7 +21,6 @@ def generate_four_moving_gaussians(x_min=-10, x_max=10, y_min=-10, y_max=10, siz
     int_gaussians = [None, None, None, None]
 
     colorschemes = color_schemes.get_colorbrewer_schemes()
-    color_codes = [color_schemes.get_main_color(i)[-1] for i in colorschemes]
     cov_matrix = [[5, 0], [0, 5]]
     z_lists = []
     z_sums = []
@@ -45,7 +44,7 @@ def generate_four_moving_gaussians(x_min=-10, x_max=10, y_min=-10, y_max=10, siz
         z_lists.append(z_list)
         z_sums.append(z_sum)
         gaussians.append([copy.deepcopy(i) for i in int_gaussians])
-    return z_lists, z_sums, gaussians, color_codes
+    return gaussians
 
 
 def generate_default_gaussian(means=None, cov_matrix=None, *args, **kwargs):
@@ -54,6 +53,7 @@ def generate_default_gaussian(means=None, cov_matrix=None, *args, **kwargs):
     if means is None:
         means = [0, 0]
     return Gaussian(means=means, cov_matrix=cov_matrix, *args, **kwargs)
+
 
 def generate_reversed_moving_gaussian(x_min=-10, x_max=10, y_min=-10, y_max=10, size=200, weight=0.5):
     variance_x, variance_y = 5, 5
@@ -73,6 +73,7 @@ def generate_reversed_moving_gaussian(x_min=-10, x_max=10, y_min=-10, y_max=10, 
                          y_min=y_min, y_max=y_max,
                          size=size, weight=weight))
     return gaussians_2d
+
 
 def generate_moving_gaussian(x_min=-10, x_max=10, y_min=-10, y_max=10, size=200, weight=0.5):
     var_x, var_y = [2, 5, 10, 15, 20], [15, 20]
@@ -121,7 +122,7 @@ def generate_three_gaussians(weights=None, *args, **kwargs):
 def generate_four_random_gaussians(weights=None, *args, **kwargs):
     if weights is None:
         weights = [0.25, 0.25, 0.25, 0.25]
-    static_gaussian = generate_default_gaussian(weight=weights[0])
+    static_gaussian = generate_default_gaussian(weight=weights[0], *args, **kwargs)
     gaussians_1 = generate_moving_gaussian(weight=weights[1], *args, **kwargs)
     gaussians_2 = generate_moving_gaussian(weight=weights[2], *args, **kwargs)
     gaussians_3 = generate_moving_gaussian(weight=weights[3], *args, **kwargs)
@@ -154,7 +155,7 @@ def generate_four_gaussians(weights=None, *args, **kwargs):
 def generate_five_gaussians(weights=None, *args, **kwargs):
     if weights is None:
         weights = [0.2, 0.2, 0.2, 0.2, 0.2]
-    static_gaussian = generate_default_gaussian(weight=weights[0])
+    static_gaussian = generate_default_gaussian(weight=weights[0], *args, **kwargs)
     gaussians_1 = generate_moving_gaussian(weights[1], *args, **kwargs)
     gaussians_2 = generate_moving_gaussian(weights[2], *args, **kwargs)
     gaussians_3 = generate_moving_gaussian(weights[3], *args, **kwargs)
@@ -163,6 +164,6 @@ def generate_five_gaussians(weights=None, *args, **kwargs):
     for i, j, k, l in it.combinations(range(len(gaussians_1)), 4):
         gaussians_5.append([static_gaussian, gaussians_1[i], gaussians_2[j], gaussians_3[k], gaussians_4[l]])
     example_data = []
-    for i in np.linspace(0, len(gaussians_5)-1, dtype=int, num=25):
+    for i in np.linspace(0, len(gaussians_5) - 1, dtype=int, num=25):
         example_data.append(gaussians_5[i])
     return example_data

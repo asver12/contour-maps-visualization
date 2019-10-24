@@ -180,6 +180,7 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
     :param mode: sets the mode to use. Defaults is hierarchic and defaults to hierarchic
     :param blending_operator: operator with which the pictures are merged
     :param borders: min and max color from colorspace which is used from 0. to 1.
+    :param min_gauss: uses minimal gaussian for the threshold for colors
     :param lower_border: min alpha value which is shown in each vis
     :return: colorgrid with merged image
     """
@@ -197,16 +198,17 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
     else:
         barrier = None
     if len(z_list) == 1:
-        img, _ = get_colorgrid(z_list[0], **colorschemes[0], num_of_levels=num_of_levels, min_value=borders[0],
+        img, _ = get_colorgrid(z_list[0], **colorschemes[0], method=method, num_of_levels=num_of_levels,
+                               min_value=borders[0],
                                max_value=borders[1], split=True, min_border=barrier,
                                lvl_white=0 if barrier else 1)
         return img, z_list[0]
-    img_list = generate_img_list(z_list, z_min, z_max, colorschemes, *borders, method, num_of_levels,
+    img_list = generate_img_list(z_list, z_min, z_max, colorschemes, *borders, method=method,
+                                 num_of_levels=num_of_levels,
                                  min_border=barrier,
                                  lvl_white=0 if barrier else 1)
-    return combine_multiple_images_hierarchic(blending_operator, img_list, z_list, color_space=color_space,
-                                              use_c_implementation=use_c_implementation,
-                                              mode=mode)
+    return combine_multiple_images_hierarchic(img_list, z_list, blending_operator, color_space=color_space,
+                                              use_c_implementation=use_c_implementation, mode=mode)
 
 
 def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, z_sum=None, colorschemes=None,
@@ -219,7 +221,7 @@ def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, z_sum=No
                 borders=None,
                 min_gauss=False,
                 lower_border=None,
-                lower_border_to_cut=0):
+                lower_border_to_cut=0, xlim=None, ylim=None):
     """
     inputs the contours of distributions into an matplotlib axis object
 
@@ -237,8 +239,9 @@ def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, z_sum=No
     :param blending_operator: operator with which the pictures are merged
     :param borders: min and max color from colorspace which is used from 0. to 1.
     """
+    limits = helper.get_limits(distributions, xlim, ylim)
     if z_list is None:
-        z_list = helper.generate_distribution_grids(distributions)
+        z_list = helper.generate_distribution_grids(distributions, limits=limits)
     if z_min is None:
         z_min, z_max, z_sum = helper.generate_weights(z_list)
     if colorschemes is None:
@@ -246,8 +249,7 @@ def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, z_sum=No
     img, alpha = calculate_image(z_list, z_min, z_max, z_sum, colorschemes, method, num_of_levels, color_space,
                                  use_c_implementation, mode, blending_operator, borders, min_gauss=min_gauss,
                                  lower_border=lower_border, lower_border_to_cut=lower_border_to_cut)
-    extent = [*helper.get_x_values(distributions), *helper.get_y_values(distributions)]
-
+    extent = [limits.x_min, limits.x_max, limits.y_min, limits.y_max]
     ax.imshow(img, extent=extent, origin='lower')
 
 
@@ -280,9 +282,10 @@ def _hierarchic_blending(args, blending_operator, i, image, image2, img, img2, j
                                                                   z_2[i][j], z_new[i][j]))
 
 
-def combine_multiple_images_hierarchic(blending_operator, images, z_values, color_space="lab",
-                                       use_c_implementation=False, mode="hierarchic", *args,
-                                       **kwargs):
+def combine_multiple_images_hierarchic(images, z_values,
+                                       blending_operator=hierarchic_blending_operator.porter_duff_source_over,
+                                       color_space="lab",
+                                       use_c_implementation=False, mode="hierarchic", *args, **kwargs):
     """
     Merges multiple pictures into one using a given blending-operator, the specific grade of blending is weighted by
     the z_values of each image. The pixel of each image is merged by its weight. From lowest to highest

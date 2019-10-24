@@ -60,13 +60,13 @@ def get_distance_ratio(num_of_pies_x, limits):
 
 
 def input_image(ax, distribution, z_sum=None, num_of_pies_x=10, num_of_pies_y=0, angle=0, set_limit=False,
-                iso_level=8, level_to_cut=0, contour_method="equal_density",
+                iso_level=8, level_to_cut=1, contour_method="equal_density",
                 colorschemes=color_schemes.get_colorbrewer_schemes(),
-                modus="light", borders=None, scale=1.):
-    limits = helper.get_limits(distribution)
+                modus="light", borders=None, scale=1., xlim=None, ylim=None):
+    limits = helper.get_limits(distribution, xlim, ylim)
     if borders is None:
         if modus == "size":
-            borders = [0.1, 0.9]
+            borders = [0.1, 1]
         else:
             borders = [.2, .9]
     if set_limit:
@@ -82,12 +82,14 @@ def input_image(ax, distribution, z_sum=None, num_of_pies_x=10, num_of_pies_y=0,
         z_min = np.min(z_sum)
         z_max = np.max(z_sum)
     if iso_level:
-        if 0 <= level_to_cut <= iso_level:
-            barrier = iso_lines.get_iso_levels(z_sum, contour_method, iso_level)[level_to_cut]
+        if 0 < level_to_cut <= iso_level:
+            barrier = iso_lines.get_iso_levels(z_sum, contour_method, iso_level)[level_to_cut - 1]
         else:
-            logger.warning(
-                "Point to cut[{}] is not in iso-level[{}]. Using pie-charts without point to cut".format(level_to_cut,
-                                                                                                         iso_level))
+            if level_to_cut > 0:
+                logger.warning(
+                    "Point to cut[{}] is not in iso-level[{}]. Using pie-charts without point to cut".format(
+                        level_to_cut,
+                        iso_level))
             barrier = None
     else:
         barrier = None
@@ -111,7 +113,7 @@ def generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max,
     if new_ratio is not None:
         new_ratio = np.asarray(input_values) / len(input_values)
     if modus == "size":
-        use_colors = [color_schemes.get_main_color(i)[5] for i in colorschemes]
+        use_colors = [color_schemes.get_main_color(i)[-5] for i in colorschemes]
         draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
                  radius=get_radius(min(distances), sum(input_values), z_min, z_max, borders), colors=use_colors)
     elif modus == "light":
@@ -126,7 +128,7 @@ def generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max,
         for colorscheme in colorschemes:
             use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
         draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
-                 radius=get_radius(min(distances), sum(input_values), z_min, z_max, [0.7, 0.9]),
+                 radius=get_radius(min(distances), sum(input_values), z_min, z_max, [0.7, 1]),
                  colors=use_colors)
 
 

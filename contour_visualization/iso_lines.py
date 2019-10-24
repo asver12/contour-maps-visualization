@@ -6,11 +6,12 @@ from contour_visualization.picture_contours import logger
 
 import importlib
 
-
-iso_mod = importlib.util.find_spec("iso_levels")
+iso_mod = importlib.util.find_spec("density_visualization.iso_levels")
 iso_lvl_exists = iso_mod is not None
 if iso_lvl_exists:
     from density_visualization import iso_levels
+else:
+    logger.warning("Iso-Level-Lib not found. Using default method")
 
 
 def get_iso_levels(x, method="equal_density", num_of_levels=8):
