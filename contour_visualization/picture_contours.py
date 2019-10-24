@@ -250,7 +250,6 @@ def input_image(ax, distributions, z_list=None, z_min=None, z_max=None, z_sum=No
                                  use_c_implementation, mode, blending_operator, borders, min_gauss=min_gauss,
                                  lower_border=lower_border, lower_border_to_cut=lower_border_to_cut)
     extent = [limits.x_min, limits.x_max, limits.y_min, limits.y_max]
-    print(img)
     ax.imshow(img, extent=extent, origin='lower')
 
 
