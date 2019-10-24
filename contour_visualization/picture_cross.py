@@ -1,5 +1,3 @@
-import inspect
-
 import numpy as np
 from matplotlib.patches import Polygon
 from scipy import linalg
@@ -49,10 +47,22 @@ def get_intersection(polys):
 
 
 def generate_polygons(rectangle_1, colors, z_weights):
-    for first_point, second_point, color, z_weight in zip(rectangle_1[:-1], rectangle_1[1:], colors, z_weights):
-        poly = (convert_to_int(first_point[0]), convert_to_int(second_point[0]), convert_to_int(second_point[1]),
-                convert_to_int(first_point[1]))
-        yield poly, color, z_weight
+    r_point = rectangle_1[0]
+    c_point = colors[0]
+    z_point = z_weights[0]
+
+    for point, color, z_weight in zip(rectangle_1[1:], [*colors[1:], None], [*z_weights[1:], None]):
+        if not np.array_equal(c_point, color):
+            poly = (convert_to_int(r_point[0]), convert_to_int(point[0]), convert_to_int(point[1]),
+                    convert_to_int(r_point[1]))
+            yield poly, c_point, z_point
+            r_point = point
+            c_point = color
+            z_point = z_weight
+
+
+def join_inner_polys(crosses):
+    return crosses
 
 
 def generate_polys(cross_lines):
@@ -126,13 +136,13 @@ def mix_colors(colors, z_weights, mode="hierarchic",
         logger.debug("Mode: alpha_sum")
         sum_z_weights = sum(z_weights)
         # normalize values
-        colors = [list(map(lambda x: x*(weight/sum_z_weights), col)) for col, weight in zip(colors, z_weights)]
+        colors = [list(map(lambda x: x * (weight / sum_z_weights), col)) for col, weight in zip(colors, z_weights)]
         # sum each value in list
         colors = [sum(x) for x in zip(*colors)]
     elif mode == "alpha_sum_quad":
         logger.debug("Mode: alpha_sum_quad")
-        sum_z_weights = sum(map(lambda x: x**2, z_weights))
-        colors = [list(map(lambda x: x*(weight**2/sum_z_weights), col)) for col, weight in zip(colors, z_weights)]
+        sum_z_weights = sum(map(lambda x: x ** 2, z_weights))
+        colors = [list(map(lambda x: x * (weight ** 2 / sum_z_weights), col)) for col, weight in zip(colors, z_weights)]
         colors = [sum(x) for x in zip(*colors)]
     else:
         logger.debug("Mode: hierarchic")
@@ -487,7 +497,7 @@ def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, broad=3, sa
     for cross in cross_lines:
         generate_cross(ax, *cross[:4], fill=cross_fill, *args, **kwargs)
     if fill:
-        fill_between_lines(ax, cross_lines, blending_operator, mode, color_space=color_space)
+        fill_between_lines(ax, cross_lines, blending_operator=blending_operator, mode=mode, color_space=color_space)
 
 
 def convert_color_to_rgb(color, color_space="lab"):

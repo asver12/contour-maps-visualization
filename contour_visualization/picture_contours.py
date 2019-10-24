@@ -187,14 +187,17 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
     if borders is None:
         borders = [0, 1]
     if lower_border:
-        if min_gauss:
-            barrier = z_max
-            for i in z_list:
-                new_barrier = iso_lines.get_iso_levels(i, method, lower_border)[lower_border_to_cut]
-                if new_barrier < barrier:
-                    barrier = new_barrier
+        if lower_border_to_cut < 0:
+            barrier = 0
         else:
-            barrier = iso_lines.get_iso_levels(z_sum, method, lower_border)[lower_border_to_cut]
+            if min_gauss:
+                barrier = z_max
+                for i in z_list:
+                    new_barrier = iso_lines.get_iso_levels(i, method, lower_border)[lower_border_to_cut]
+                    if new_barrier < barrier:
+                        barrier = new_barrier
+            else:
+                barrier = iso_lines.get_iso_levels(z_sum, method, lower_border)[lower_border_to_cut]
     else:
         barrier = None
     if len(z_list) == 1:
@@ -206,7 +209,7 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
     img_list = generate_img_list(z_list, z_min, z_max, colorschemes, *borders, method=method,
                                  num_of_levels=num_of_levels,
                                  min_border=barrier,
-                                 lvl_white=0 if barrier else 1)
+                                 lvl_white=0 if barrier == 0 else 1)
     return combine_multiple_images_hierarchic(img_list, z_list, blending_operator, color_space=color_space,
                                               use_c_implementation=use_c_implementation, mode=mode)
 

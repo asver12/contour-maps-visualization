@@ -16,6 +16,14 @@ visualizations = ["contour_lines", "contours", "pie_charts", "crosses"]
 
 
 def plot_all_methods(distributions, *args, **kwargs):
+    """
+    plots for a list of distributions all visualizations
+
+    :param distributions:
+    :param args:
+    :param kwargs:
+    :return:
+    """
     plot_images(distributions, contours=True, contour_lines=True, *args, **kwargs)
     plot_images(distributions, pie_charts=True, *args, **kwargs)
     plot_images(distributions, crosses=True, contour_lines=True, *args, **kwargs)
