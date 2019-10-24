@@ -177,11 +177,9 @@ void pictureMerge::mmMultQuadraticHierarchic(int m, int n, int numberOfMatrizes,
     double alpha_sum = 0;
     for (int l = 0; l < numberOfMatrizes; ++l) {
       if (_checkIfSingleColor(&matrizes[l][i * 3])) {
-        alpha_sum += pow(weights[l][i], 2);  // pow(weights[l][i], 2.);
-        // weights[l][i] = pow(weights[l][i], 2.);
+        alpha_sum += pow(weights[l][i], 2);
       }
     }
-    printf("%f\n", alpha_sum);
     std::vector<double> _new_color(3);
     bool foundColor = false;
     int start_index = 0;
@@ -206,8 +204,8 @@ void pictureMerge::mmMultQuadraticHierarchic(int m, int n, int numberOfMatrizes,
     }
     if (foundColor) {
       for (int k = start_index; k < numberOfMatrizes; ++k) {
-        mix_color(_new_color.data(), &matrizes[k][i * 3], _cieLab1.data(),
-                  &weights[k][i], &alpha_sum, colorspace);
+        mix_color_l2(_new_color.data(), &matrizes[k][i * 3], _cieLab1.data(),
+                     &weights[k][i], &alpha_sum, colorspace);
       }
       if (strncmp(colorspace, "lab", 3) == 0) {
         _getRgb(_new_color.data(), _rgb.data());
