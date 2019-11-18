@@ -168,7 +168,7 @@ def fill_between_lines(axis, cross_lines, blending_operator=hierarchic_blending_
             logger.debug("z[{}]: {}".format(region[2], z_weig))
         color = mix_colors(col, z_weig, mode=mode, blending_operator=blending_operator, color_space=color_space)
         axis.add_patch(Polygon([convert_to_float(point) for point in region[0]], closed=True,
-                               fill=True, edgecolor=color, facecolor=color, aa=True, linewidth=0.))
+                               fill=True, edgecolor=None, facecolor=color, aa=True, linewidth=0.))
 
 
 def generate_line(axis, line, color_points=None, borders=None, fill=True, linewidth=0., use_colors=True):
@@ -461,8 +461,8 @@ def get_broad(broad, line_short, line_long, same_length=True):
 def generate_cross(axis, line_1, line_2, colors_1, colors_2, *args, **kwargs):
     logger.debug("Len Line 1: {}".format(len(line_1)))
     logger.debug("Len Colors 1: {}".format(len(colors_1)))
-    generate_line(axis, line_1, colors_1, *args, helper.filter_kwargs(generate_line, **kwargs))
-    generate_line(axis, line_2, colors_2, *args, helper.filter_kwargs(generate_line, **kwargs))
+    generate_line(axis, line_1, colors_1, *args, **helper.filter_kwargs(generate_line, **kwargs))
+    generate_line(axis, line_2, colors_2, *args, **helper.filter_kwargs(generate_line, **kwargs))
 
 
 def generate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%", same_broad=True,

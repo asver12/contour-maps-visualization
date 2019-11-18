@@ -200,16 +200,17 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
                 barrier = iso_lines.get_iso_levels(z_sum, method, lower_border)[lower_border_to_cut]
     else:
         barrier = None
+    logger.debug("Lower Barrier is: {}".format(barrier))
     if len(z_list) == 1:
         img, _ = get_colorgrid(z_list[0], **colorschemes[0], method=method, num_of_levels=num_of_levels,
                                min_value=borders[0],
                                max_value=borders[1], split=True, min_border=barrier,
-                               lvl_white=0 if barrier else 1)
+                               lvl_white=0 if not (barrier is None) else 1)
         return img, z_list[0]
     img_list = generate_img_list(z_list, z_min, z_max, colorschemes, *borders, method=method,
                                  num_of_levels=num_of_levels,
                                  min_border=barrier,
-                                 lvl_white=0 if barrier == 0 else 1)
+                                 lvl_white=0 if not (barrier is None) else 1)
     return combine_multiple_images_hierarchic(img_list, z_list, blending_operator, color_space=color_space,
                                               use_c_implementation=use_c_implementation, mode=mode)
 

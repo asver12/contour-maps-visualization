@@ -58,6 +58,7 @@ def plot_image_variations(distribution, plot_titles=False, titles="", colors="",
                ylabel=ylabel, crosses=True, contour_lines=True, *args, **kwargs)
     plot_image(ax[2], distribution, title=title, legend=True, legend_colors=color_legend, xlabel=xlabel,
                ylabel=ylabel, pie_charts=True, *args, **kwargs)
+    return fig, ax
 
 
 def plot_images(distributions, plot_titles=False, titles="", colors="", columns=5, xlabels="", ylabels="", legend=True,
@@ -149,6 +150,8 @@ def plot_image(ax, distributions,
                cross_same_broad=True,
                cross_length_multiplier=2. * np.sqrt(2.),
                cross_borders=None,
+               cross_fill=True,
+               cross_line_width=0.,
                cross_blending_operator=hierarchic_blending_operator.porter_duff_source_over,
                cross_mode="hierarchic",
                pie_charts=False, pie_num=25, pie_angle=90, pie_chart_colors=None, pie_chart_modus="light",
@@ -286,8 +289,9 @@ def plot_image(ax, distributions,
             picture_cross.input_crosses(ax, distributions, z_list, z_min, z_max, cross_colorscheme, cross_width,
                                         cross_same_broad,
                                         cross_length_multiplier,
-                                        cross_borders, linewidth=linewidth,
-                                        blending_operator=cross_blending_operator, mode=cross_mode, color_space=color_space, *args, **kwargs)
+                                        cross_borders,linewidth=cross_line_width, cross_fill=cross_fill,
+                                        blending_operator=cross_blending_operator, mode=cross_mode,
+                                        color_space=color_space, *args, **kwargs)
         if contour_lines:
             if isinstance(contour_line_colorscheme, dict):
                 picture_contour_lines.generate_contour_lines(ax, z_sum, limits,

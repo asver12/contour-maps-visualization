@@ -93,6 +93,8 @@ def input_image(ax, distribution, z_sum=None, num_of_pies_x=10, num_of_pies_y=0,
             barrier = None
     else:
         barrier = None
+    lw_borders = [iso_lines.get_iso_levels(i.get_density_grid(i.size, limits.x_min, limits.x_max, limits.y_min, limits.y_max)[2])[0] for i in
+                  distribution]
     for k in container[0][0]:
         for l in container[1]:
             middle_point = k, l[0]
@@ -101,14 +103,14 @@ def input_image(ax, distribution, z_sum=None, num_of_pies_x=10, num_of_pies_y=0,
                 input_values.append(distribution[j].get_density(middle_point))
             if not barrier:
                 generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max, borders, modus,
-                             colorschemes, scale)
+                             colorschemes, scale, lw_borders)
             elif sum(input_values) > barrier:
                 generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max, borders, modus,
-                             colorschemes, scale)
+                             colorschemes, scale, lw_borders)
 
 
 def generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max, borders, modus, colorschemes,
-                 scale=1.):
+                 scale=1., lw_border=None):
     new_ratio = helper.normalize_array(input_values, min(input_values), max(input_values), 0, 1)
     if new_ratio is not None:
         new_ratio = np.asarray(input_values) / len(input_values)
@@ -120,6 +122,11 @@ def generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max,
         use_colors = []
         for colorscheme in colorschemes:
             use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
+        # for i, schemes in enumerate(colorschemes[:len(lw_border)]):
+        #     if input_values[i] > lw_border[i]:
+        #         use_colors.append(get_colors_to_use(schemes, input_values[i], z_min, z_max, borders))
+        #     else:
+        #         use_colors.append([0., 0., 0., 0.])
         logger.debug("Using colors: {}".format(use_colors))
         draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
                  radius=(min(distances) / 2) * scale, colors=use_colors)
