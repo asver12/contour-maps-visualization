@@ -1,5 +1,10 @@
 contour-maps-visualisation
 ==========================
+.. image:: https://travis-ci.org/asver12/contour-maps-visualization.svg?branch=master
+    :target: https://travis-ci.org/asver12/contour-maps-visualization
+
+.. image:: https://codecov.io/gh/asver12/contour-maps-visualization/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/asver12/contour-maps-visualization
 
 Objective
 ---------
