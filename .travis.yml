@@ -8,6 +8,8 @@ matrix:
         - pip install pytest-cov
       script:
         - python -m pytest --cov-report=xml --cov=contour_visualization tests/
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
     - git:
         submodules: false
       os: linux
