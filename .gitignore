@@ -12,6 +12,8 @@ contour_visualization/cmodule/build
 # own stuff
 private
 
+# codecov
+.coverage
 
 # Sphinx documentation
 docs/_build/
