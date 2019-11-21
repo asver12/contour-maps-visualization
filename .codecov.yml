@@ -1,7 +1,7 @@
+ignore:
+  - "contour_visualization/cmodule"
 codecov:
-  notify:
-    require_ci_to_pass: no
-    after_n_builds: 1
+  require_ci_to_pass: yes
 coverage:
   status:
     project:

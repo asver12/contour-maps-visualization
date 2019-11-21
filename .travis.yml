@@ -5,12 +5,10 @@ matrix:
       language: python
       install:
         - pip install -r requirements.txt
-        - pip install codecov
+        - pip install pytest-cov
       script:
         - python -m pytest
-        - coverage run
-      after_success:
-        - codecov
+        - py.test --cov-report=xml --cov=contour_visualization tests/
     - git:
         submodules: false
       os: linux
