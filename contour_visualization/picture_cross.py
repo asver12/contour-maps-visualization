@@ -10,6 +10,8 @@ from contour_visualization import helper, picture_contours, color_schemes, hiera
 
 import logging
 
+from contour_visualization.Gaussian import Gaussian
+
 logger = logging.getLogger(__name__)
 
 
@@ -126,13 +128,13 @@ def mix_colors(colors, z_weights, mode="hierarchic",
         logger.debug("Mode: alpha_sum")
         sum_z_weights = sum(z_weights)
         # normalize values
-        colors = [list(map(lambda x: x*(weight/sum_z_weights), col)) for col, weight in zip(colors, z_weights)]
+        colors = [list(map(lambda x: x * (weight / sum_z_weights), col)) for col, weight in zip(colors, z_weights)]
         # sum each value in list
         colors = [sum(x) for x in zip(*colors)]
     elif mode == "alpha_sum_quad":
         logger.debug("Mode: alpha_sum_quad")
-        sum_z_weights = sum(map(lambda x: x**2, z_weights))
-        colors = [list(map(lambda x: x*(weight**2/sum_z_weights), col)) for col, weight in zip(colors, z_weights)]
+        sum_z_weights = sum(map(lambda x: x ** 2, z_weights))
+        colors = [list(map(lambda x: x * (weight ** 2 / sum_z_weights), col)) for col, weight in zip(colors, z_weights)]
         colors = [sum(x) for x in zip(*colors)]
     else:
         logger.debug("Mode: hierarchic")
@@ -458,6 +460,9 @@ def generate_cross(axis, line_1, line_2, colors_1, colors_2, *args, **kwargs):
 def generate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%", same_broad=True,
                      length_mutliplier=2. * np.sqrt(2.), borders=None,
                      *args, **kwargs):
+    if not all([isinstance(gaussian, Gaussian) for gaussian in gaussians]):
+        raise ValueError(
+            "List of Gaussian is expected to be from type gaussian[from contour_visualization.Gaussian import Gaussian]")
     if borders is None:
         borders = [0, 1]
     lower_border = borders[0]

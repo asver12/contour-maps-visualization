@@ -1,6 +1,8 @@
 import unittest
-from contour_visualization import picture_cross
+from contour_visualization import picture_cross, helper, color_schemes
 import numpy as np
+
+from contour_visualization.Gaussian import Gaussian
 
 
 class PictureCrossTests(unittest.TestCase):
@@ -51,14 +53,132 @@ class PictureCrossTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        x_min = -10
-        x_max = 10
-        y_min = -10
-        y_max = 10
-        size = 100
-        x_list = np.linspace(x_min, x_max, size)
-        y_list = np.linspace(y_min, y_max, size)
+        cls.x_min = -10
+        cls.x_max = 10
+        cls.y_min = -10
+        cls.y_max = 10
+        cls.size = 100
+        cls.weight = 0.5
+        x_list = np.linspace(cls.x_min, cls.x_max, cls.size)
+        y_list = np.linspace(cls.y_min, cls.y_max, cls.size)
         cls.x_list, cls.y_list = np.meshgrid(x_list, y_list)
+
+    def test_generate_crosses_crosses(self):
+        dist_one_first_line = [((1., -4.), (5., 4.440892098500626e-16)),
+                               ((-0.181818, -2.818181),
+                                (3.818181, 1.181818)),
+                               ((-1., -2.),
+                                (3., 2.)),
+                               ((-1.818181, -1.181818),
+                                (2.181818, 2.818181)),
+                               ((-3., -4.440892098500626e-16), (1., 4.))]
+        dist_one_second_line = [((-1.4721359549995792, -6.47213595499958),
+                                 (-5.47213595499958, -2.472135954999579)),
+                                ((1.1162821280456323, -3.8837178719543686),
+                                 (-2.8837178719543686, 0.11628212804563232)),
+                                ((3.0000000000000004, -2.0000000000000004),
+                                 (-1.0000000000000004, 2.0000000000000004)),
+                                ((4.883717871954369, -0.11628212804563187),
+                                 (0.8837178719543681, 3.883717871954369)),
+                                ((7.47213595499958, 2.472135954999579),
+                                 (3.472135954999579, 6.47213595499958))]
+        dist_two_first_line = [((0.0, -7.000000000000002), (8.000000000000002, 1.0)),
+                               ((-2.363636363636364, -4.636363636363638),
+                                (5.636363636363638, 3.363636363636364)),
+                               ((-4.000000000000001, -3.000000000000001),
+                                (4.000000000000001, 5.000000000000001)),
+                               ((-5.636363636363638, -1.3636363636363642),
+                                (2.363636363636364, 6.636363636363638)),
+                               ((-8.000000000000002, 1.0), (0.0, 9.000000000000002))]
+        dist_two_second_line = [((-1.6568542494923806, -8.656854249492383),
+                                 (-9.656854249492383, -0.6568542494923806)),
+                                ((1.6172644221835126, -5.382735577816489),
+                                 (-6.382735577816489, 2.6172644221835126)),
+                                ((4.000000000000001, -3.000000000000001),
+                                 (-4.000000000000001, 5.000000000000001)),
+                                ((6.382735577816488, -0.6172644221835135),
+                                 (-1.6172644221835135, 7.382735577816488)),
+                                ((9.656854249492383, 2.6568542494923806),
+                                 (1.6568542494923806, 10.656854249492383))]
+
+        dist_1 = Gaussian(means=[1, 0], cov_matrix=[[3, 2], [2, 3]], x_min=self.x_min, x_max=self.x_max,
+                          y_min=self.y_min, y_max=self.y_max,
+                          size=self.size, weight=self.weight)
+        dist_2 = Gaussian(means=[0, 1], cov_matrix=[[6, 2], [2, 6]], x_min=self.x_min, x_max=self.x_max,
+                          y_min=self.y_min, y_max=self.y_max,
+                          size=self.size, weight=self.weight)
+        distributions = [dist_1, dist_2]
+
+        # unpleasant....
+        limits = helper.get_limits(distributions)
+        z_list = helper.generate_distribution_grids(distributions, limits=limits)
+        z_min, z_max, z_sum = helper.generate_weights(z_list)
+        colorschemes = color_schemes.get_colorbrewer_schemes()
+
+        crosses = picture_cross.generate_crosses(distributions, z_list, z_min, z_max, colorschemes, method="normal",
+                                                 num_of_levels=1)
+        np.testing.assert_almost_equal(dist_one_first_line, crosses[0][0], decimal=5)
+        np.testing.assert_almost_equal(dist_one_second_line, crosses[0][1], decimal=5)
+        np.testing.assert_almost_equal(dist_two_first_line, crosses[1][0], decimal=5)
+        np.testing.assert_almost_equal(dist_two_second_line, crosses[1][1], decimal=5)
+
+    def test_generate_crosses_colors(self):
+        dist_one_colors = [[0.77647059, 0.85882353, 0.9372549, 1.],
+                           [0.12941176, 0.44313725, 0.70980392, 1.],
+                           [.12941176, 0.44313725, 0.70980392, 1.],
+                           [0.77647059, 0.85882353, 0.9372549, 1.]]
+
+        dist_two_colors = [[0.99607843, 0.92428677, 0.85887397, 1.],
+                           [0.99215686, 0.77615063, 0.57159781, 1.],
+                           [0.99215686, 0.77615063, 0.57159781, 1.],
+                           [0.99607843, 0.92428677, 0.85887397, 1.]]
+
+        dist_1 = Gaussian(means=[1, 0], cov_matrix=[[3, 2], [2, 3]], x_min=self.x_min, x_max=self.x_max,
+                          y_min=self.y_min, y_max=self.y_max,
+                          size=self.size, weight=self.weight)
+        dist_2 = Gaussian(means=[0, 1], cov_matrix=[[6, 2], [2, 6]], x_min=self.x_min, x_max=self.x_max,
+                          y_min=self.y_min, y_max=self.y_max,
+                          size=self.size, weight=self.weight)
+        distributions = [dist_1, dist_2]
+
+        # unpleasant....
+        limits = helper.get_limits(distributions)
+        z_list = helper.generate_distribution_grids(distributions, limits=limits)
+        z_min, z_max, z_sum = helper.generate_weights(z_list)
+        colorschemes = color_schemes.get_colorbrewer_schemes()
+
+        crosses = picture_cross.generate_crosses(distributions, z_list, z_min, z_max, colorschemes, method="normal",
+                                                 num_of_levels=1)
+        np.testing.assert_almost_equal(dist_one_colors, crosses[0][2])
+        np.testing.assert_almost_equal(dist_one_colors, crosses[0][3])
+        np.testing.assert_almost_equal(dist_two_colors, crosses[1][2])
+        np.testing.assert_almost_equal(dist_two_colors, crosses[1][3])
+
+    #
+    def test_generate_crosses_iso_lines(self):
+        dist_one_iso_lines = [0.25, 0.75, 0.75, 0.25]
+
+        dist_two_iso_lines = [0.09889134000871382,
+                              0.2966740200253193,
+                              0.2966740200253193,
+                              0.09889134000871382]
+        dist_1 = Gaussian(means=[1, 0], cov_matrix=[[3, 2], [2, 3]], x_min=self.x_min, x_max=self.x_max,
+                          y_min=self.y_min, y_max=self.y_max,
+                          size=self.size, weight=self.weight)
+        dist_2 = Gaussian(means=[0, 1], cov_matrix=[[6, 2], [2, 6]], x_min=self.x_min, x_max=self.x_max,
+                          y_min=self.y_min, y_max=self.y_max,
+                          size=self.size, weight=self.weight)
+        distributions = [dist_1, dist_2]
+
+        # unpleasant....
+        limits = helper.get_limits(distributions)
+        z_list = helper.generate_distribution_grids(distributions, limits=limits)
+        z_min, z_max, z_sum = helper.generate_weights(z_list)
+        colorschemes = color_schemes.get_colorbrewer_schemes()
+
+        crosses = picture_cross.generate_crosses(distributions, z_list, z_min, z_max, colorschemes, method="normal", num_of_levels=1)
+        np.testing.assert_almost_equal(dist_one_iso_lines, crosses[0][4])
+        # np.testing.assert_almost_equal(dist_two_iso_lines, crosses[1][4])
 
     def test_find_point_indices_value_error(self):
         # throws an error when more or less than 2 points are given
