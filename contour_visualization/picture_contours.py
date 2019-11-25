@@ -169,7 +169,6 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
     generates a merged image from multiple density-grids with same shape
 
 
-
     :param z_list: list of densities each one with the same shape [density_1, ... , density_n]
     :param z_min: minimal density occurring in the z_list min([density_1, ... , density_n])
     :param z_max: maximal density occurring in the z_list max([density_1, ... , density_n])
@@ -184,8 +183,10 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
     :param borders: min and max color from colorspace which is used from 0. to 1.
     :param min_gauss: uses minimal gaussian for the threshold for colors
     :param lower_border: min alpha value which is shown in each vis
+    :param lower_border_to_cut:
     :return: colorgrid with merged image
     """
+
     if borders is None:
         borders = [0, 1]
     if lower_border:
