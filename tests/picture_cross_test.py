@@ -3,7 +3,7 @@ from contour_visualization import picture_cross
 import numpy as np
 
 
-class PictureCrossTest(unittest.TestCase):
+class PictureCrossTests(unittest.TestCase):
     # def test_get_cross(self):
     #     pass
     #

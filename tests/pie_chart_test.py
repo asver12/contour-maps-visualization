@@ -3,7 +3,7 @@ import unittest
 from contour_visualization import pie_chart_vis
 
 
-class MyTestCase(unittest.TestCase):
+class PieChartTests(unittest.TestCase):
     def test_sort_ratios_basic(self):
         sorting_list = [3, 5, 2, 6]
         sorted_list = [[0, 1, 2], [4, 6, 8], [5, 1, 2], [2, 8, 8]]
