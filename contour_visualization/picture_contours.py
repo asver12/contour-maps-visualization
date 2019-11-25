@@ -169,9 +169,11 @@ def calculate_image(z_list, z_min, z_max, z_sum, colorschemes,
     generates a merged image from multiple density-grids with same shape
 
 
+
     :param z_list: list of densities each one with the same shape [density_1, ... , density_n]
     :param z_min: minimal density occurring in the z_list min([density_1, ... , density_n])
     :param z_max: maximal density occurring in the z_list max([density_1, ... , density_n])
+    :param z_sum:
     :param colorschemes: colorschemes to use for each density-grid
     :param method: method with which the distance between contour-lines is chosen
     :param num_of_levels: number of contour-lines to use
@@ -301,6 +303,7 @@ def combine_multiple_images_hierarchic(images, z_values,
     :return:
     """
     images = [convert_rgb_image(np.asarray(img), None) for img in images]
+    z_values = np.asarray(z_values)
     if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
         import time
         start = time.time()
