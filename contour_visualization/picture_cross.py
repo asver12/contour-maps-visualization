@@ -1,5 +1,3 @@
-import inspect
-
 import numpy as np
 from matplotlib.patches import Polygon
 from scipy import linalg
@@ -481,6 +479,28 @@ def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, broad=3, sa
                   blending_operator=hierarchic_blending_operator.porter_duff_source_over, mode="hierarchic",
                   *args,
                   **kwargs):
+    """
+    Axis limits must be set manually. See helper.Limits for more details
+
+    :param ax:
+    :param gaussians:
+    :param z_list:
+    :param z_min:
+    :param z_max:
+    :param colorschemes:
+    :param broad:
+    :param same_broad:
+    :param length_multiplier:
+    :param borders:
+    :param color_space:
+    :param fill:
+    :param cross_fill:
+    :param blending_operator:
+    :param mode:
+    :param args:
+    :param kwargs:
+    :return:
+    """
     if not hasattr(gaussians[0], "cov_matrix"):
         raise AttributeError("[{}] property 'cov_matrix is missing".format(type(gaussians[0])))
     if not hasattr(gaussians[0], "means"):

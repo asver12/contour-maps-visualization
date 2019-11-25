@@ -12,6 +12,62 @@ class PictureCrossTests(unittest.TestCase):
     # def test_get_line(self):
     #     pass
 
+    def test_mix_colors_rgb_alpha_sum(self):
+        expected = [0.33333333, 0.33333333, 0.33333333]
+        colors = [[1., 0., 0., 1.], [0., 1., 0., 1.], [0., 0., 1., 1.]]
+        z_weights = [0.3, 0.3, 0.3]
+        result = picture_cross.mix_colors(colors, z_weights, mode="alpha_sum", color_space="rgb")
+        np.testing.assert_almost_equal(result, expected)
+
+    def test_mix_colors_rgb_alpha_sum_quad(self):
+        expected = [0.33333333, 0.33333333, 0.33333333]
+        colors = [[1., 0., 0., 1.], [0., 1., 0., 1.], [0., 0., 1., 1.]]
+        z_weights = [0.3, 0.3, 0.3]
+        result = picture_cross.mix_colors(colors, z_weights, mode="alpha_sum_quad", color_space="rgb")
+        np.testing.assert_almost_equal(result, expected)
+
+    def test_mix_colors_rgb_alpha_sum_quad_two(self):
+        expected = [0.15714286, 0.32142857, 0.67142857]
+        colors = [[1., 0.5, 0., 1.], [0.3, 1., 0.1, 1.], [0., 0., 1., 1.]]
+        z_weights = [0.1, 0.2, 0.3]
+        result = picture_cross.mix_colors(colors, z_weights, mode="alpha_sum_quad", color_space="rgb")
+        np.testing.assert_almost_equal(result, expected)
+
+    def test_mix_colors_rgb_hierarchic(self):
+        expected = [0.19047619, 0.29761905, 0.66666667]
+        colors = [[1., 0.5, 0., 1.], [0.3, 1., 0.1, 1.], [0., 0., 1., 1.]]
+        z_weights = [0.1, 0.2, 0.3]
+        result = picture_cross.mix_colors(colors, z_weights, mode="hierarchic", color_space="rgb")
+        np.testing.assert_almost_equal(result, expected)
+
+    def test_mix_colors_lab_alpha_sum(self):
+        expected = [0.73209473, 0.47870707, 0.45180603]
+        colors = [[1., 0., 0., 1.], [0., 1., 0., 1.], [0., 0., 1., 1.]]
+        z_weights = [0.3, 0.3, 0.3]
+        result = picture_cross.mix_colors(colors, z_weights, mode="alpha_sum", color_space="lab")
+        np.testing.assert_almost_equal(result, expected)
+
+    def test_mix_colors_lab_alpha_sum_quad(self):
+        expected = [0.73209473, 0.47870707, 0.45180603]
+        colors = [[1., 0., 0., 1.], [0., 1., 0., 1.], [0., 0., 1., 1.]]
+        z_weights = [0.3, 0.3, 0.3]
+        result = picture_cross.mix_colors(colors, z_weights, mode="alpha_sum", color_space="lab")
+        np.testing.assert_almost_equal(result, expected)
+
+    def test_mix_colors_lab_alpha_sum_quad_two(self):
+        expected = [0.53909051, 0.40997629, 0.74872461]
+        colors = [[1., 0.5, 0., 1.], [0.3, 1., 0.1, 1.], [0., 0., 1., 1.]]
+        z_weights = [0.1, 0.2, 0.3]
+        result = picture_cross.mix_colors(colors, z_weights, mode="alpha_sum_quad", color_space="lab")
+        np.testing.assert_almost_equal(result, expected)
+
+    def test_mix_colors_lab_hierarchic(self):
+        expected = [0.56829755, 0.38102699, 0.7405358]
+        colors = [[1., 0.5, 0., 1.], [0.3, 1., 0.1, 1.], [0., 0., 1., 1.]]
+        z_weights = [0.1, 0.2, 0.3]
+        result = picture_cross.mix_colors(colors, z_weights, mode="hierarchic", color_space="lab")
+        np.testing.assert_almost_equal(result, expected)
+
     def test_get_half_lines_basic(self):
         first_line, second_line = picture_cross.get_half_lines((0, 0), (0, 2), 2)
         self.assertSequenceEqual(first_line, ((0, -2), (0, 0)))
@@ -176,9 +232,10 @@ class PictureCrossTests(unittest.TestCase):
         z_min, z_max, z_sum = helper.generate_weights(z_list)
         colorschemes = color_schemes.get_colorbrewer_schemes()
 
-        crosses = picture_cross.generate_crosses(distributions, z_list, z_min, z_max, colorschemes, method="normal", num_of_levels=1)
+        crosses = picture_cross.generate_crosses(distributions, z_list, z_min, z_max, colorschemes, method="normal",
+                                                 num_of_levels=1)
         np.testing.assert_almost_equal(dist_one_iso_lines, crosses[0][4])
-        # np.testing.assert_almost_equal(dist_two_iso_lines, crosses[1][4])
+        np.testing.assert_almost_equal(dist_two_iso_lines, crosses[1][4])
 
     def test_find_point_indices_value_error(self):
         # throws an error when more or less than 2 points are given
