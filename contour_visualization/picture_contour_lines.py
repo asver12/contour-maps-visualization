@@ -29,8 +29,8 @@ def plot_contour_lines(ax, X, limits, levels, colors, linewidth=2, *args, **kwar
     contours = find_contour_lines(X, levels)
     for i, color in zip(contours[:len(levels)], colors[:len(levels)]):
         for contour in i:
-            contour = helper.normalize_2d_array(contour, 0, X.shape[0], limits.y_min, limits.y_max, 0,
-                                                X.shape[1],
+            contour = helper.normalize_2d_array(contour, 0, X.shape[1], limits.y_min, limits.y_max, 0,
+                                                X.shape[0],
                                                 limits.x_min, limits.x_max)
             ax.plot(contour[:, 1], contour[:, 0], linewidth=linewidth, color=color, *args, **kwargs)
 
