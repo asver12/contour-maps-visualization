@@ -513,37 +513,25 @@ def generate_cross(axis, line_1, line_2, colors_1, colors_2, *args, **kwargs):
     if middle_1 and middle_2:
         inner_union = square_union(order_points(squares_1[middle_1], squares_1[middle_1 + 1]),
                                    order_points(squares_2[middle_2], squares_2[middle_2 + 1]))
-        outer_union = order_points(squares_1[middle_1 - 1], squares_1[middle_1 + 1])
+        squares_2[middle_2 + 1] = inner_union
 
-        value = square_difference(order_points(squares_1[middle_1 - 1], squares_1[middle_1 + 1]),
-                                inner_union)[0]
-        if value:
-            squares_1[middle_1 - 1] = value
-        value = square_difference(order_points(squares_1[middle_1], squares_1[middle_1 + 2]),
-                               inner_union)[0]
-        if value:
-            squares_1[middle_1 + 2] = value
-        value = square_difference(order_points(squares_2[middle_2 - 1], squares_2[middle_2 + 1]),
-                                inner_union)[0]
-        print(value)
-        if value:
-            squares_2[middle_2 - 1] = value
-        value = square_difference(order_points(squares_2[middle_2], squares_2[middle_2 + 2]),
-                                 inner_union)[0]
-        if value:
-            squares_2[middle_2 + 2] = value
+        squares_1[middle_1 - 1] = square_difference(squares_1[middle_1 - 1], inner_union)[0]
+        squares_1[middle_1 + 2] = square_difference(squares_1[middle_1 + 2], inner_union)[0]
+        squares_2[middle_2 - 1] = square_difference(squares_2[middle_2 - 1], inner_union)[0]
+        squares_2[middle_2 + 2] = square_difference(squares_2[middle_2 + 2], inner_union)[0]
 
-    generate_line(axis, squares_1, colors_1, *args, **helper.filter_kwargs(generate_line, **kwargs))
-    generate_line(axis, squares_2, colors_2, *args, **helper.filter_kwargs(generate_line, **kwargs))
-    # print(f"Diff: {middle_difference}")
-    if middle_1 and middle_2:
+        del squares_1[middle_1:middle_1 + 2]
+        del colors_1[middle_1:middle_1 + 2]
+        del squares_2[middle_2]
+        del colors_2[middle_2]
 
-        value = square_difference(order_points(squares_2[middle_2 - 1], squares_2[middle_2 + 1]),
-                                  inner_union)
-        print(f"okay:{value}")
+        squares_1.extend(squares_2)
+        colors_1.extend(colors_2)
+        # generate_line(axis, squares_2, colors_2, *args, **helper.filter_kwargs(generate_line, **kwargs))
+        generate_line(axis, squares_1, colors_1, *args, **helper.filter_kwargs(generate_line, **kwargs))
 
-        generate_line(axis, [inner_union, ], [colors_2[middle_2], ], *args,
-                      **helper.filter_kwargs(generate_line, **kwargs))
+        # generate_line(axis, [inner_union, ], [colors_2[middle_2], ], *args,
+        #                 **helper.filter_kwargs(generate_line, **kwargs))
 
     # generate_line(axis, middle_difference[0:2], colors_2[middle_2+2:middle_2+ 2 + len(middle_difference[0:2])], *args,**helper.filter_kwargs(generate_line, **kwargs))
 
