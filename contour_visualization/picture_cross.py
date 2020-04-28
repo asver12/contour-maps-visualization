@@ -511,19 +511,19 @@ def generate_cross(axis, line_1, line_2, colors_1, colors_2, *args, **kwargs):
     # for the most inner square its possible to be hidden. Tries to avoid this by drawing the union explicit
     middle_1, middle_2 = get_middlepoint_of_crossline(colors_1), get_middlepoint_of_crossline(colors_2)
     if middle_1 and middle_2:
-        inner_union = square_union(order_points(squares_1[middle_1], squares_1[middle_1 + 1]),
-                                   order_points(squares_2[middle_2], squares_2[middle_2 + 1]))
-        squares_2[middle_2 + 1] = inner_union
+        #inner_union = square_union(order_points(squares_1[middle_1], squares_1[middle_1 + 1]),
+         #                          order_points(squares_2[middle_2], squares_2[middle_2 + 1]))
+        #squares_2[middle_2 + 1] = inner_union
 
-        squares_1[middle_1 - 1] = square_difference(squares_1[middle_1 - 1], inner_union)[0]
-        squares_1[middle_1 + 2] = square_difference(squares_1[middle_1 + 2], inner_union)[0]
-        squares_2[middle_2 - 1] = square_difference(squares_2[middle_2 - 1], inner_union)[0]
-        squares_2[middle_2 + 2] = square_difference(squares_2[middle_2 + 2], inner_union)[0]
+        #squares_1[middle_1 - 1] = square_difference(squares_1[middle_1 - 1], inner_union)[0]
+        #squares_1[middle_1 + 2] = square_difference(squares_1[middle_1 + 2], inner_union)[0]
+        #squares_2[middle_2 - 1] = square_difference(squares_2[middle_2 - 1], inner_union)[0]
+        #squares_2[middle_2 + 2] = square_difference(squares_2[middle_2 + 2], inner_union)[0]
 
-        del squares_1[middle_1:middle_1 + 2]
-        del colors_1[middle_1:middle_1 + 2]
-        del squares_2[middle_2]
-        del colors_2[middle_2]
+        #del squares_1[middle_1:middle_1 + 2]
+        #del colors_1[middle_1:middle_1 + 2]
+        #del squares_2[middle_2]
+        #del colors_2[middle_2]
 
         squares_1.extend(squares_2)
         colors_1.extend(colors_2)

@@ -112,16 +112,20 @@ def input_image(ax, distribution, z_sum=None, num_of_pies_x=10, num_of_pies_y=0,
 def generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max, borders, modus, colorschemes,
                  scale=1., lw_border=None):
     new_ratio = helper.normalize_array(input_values, min(input_values), max(input_values), 0, 1)
-    if new_ratio is not None:
-        new_ratio = np.asarray(input_values) / len(input_values)
-    if modus == "size":
+    if not isinstance(colorschemes[0], dict):
+        use_colors = colorschemes
+    elif modus == "size":
         use_colors = [color_schemes.get_main_color(i)[-5] for i in colorschemes]
-        draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
-                 radius=get_radius(min(distances), sum(input_values), z_min, z_max, borders), colors=use_colors)
-    elif modus == "light":
+    else:
         use_colors = []
         for colorscheme in colorschemes:
             use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
+    if new_ratio is not None:
+        new_ratio = np.asarray(input_values) / len(input_values)
+    if modus == "size":
+        draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
+                 radius=get_radius(min(distances), sum(input_values), z_min, z_max, borders), colors=use_colors)
+    elif modus == "light":
         # for i, schemes in enumerate(colorschemes[:len(lw_border)]):
         #     if input_values[i] > lw_border[i]:
         #         use_colors.append(get_colors_to_use(schemes, input_values[i], z_min, z_max, borders))
@@ -131,11 +135,8 @@ def generate_pie(ax, middle_point, input_values, angle, distances, z_min, z_max,
         draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
                  radius=(min(distances) / 2) * scale, colors=use_colors)
     else:
-        use_colors = []
-        for colorscheme in colorschemes:
-            use_colors.append(get_colors_to_use(colorscheme, sum(input_values), z_min, z_max, borders))
         draw_pie(ax, ratios=new_ratio, angle=angle, center=middle_point,
-                 radius=get_radius(min(distances), sum(input_values), z_min, z_max, [0.7, 1]),
+                 radius=get_radius(min(distances), sum(input_values), z_min, z_max, [0., 1]),
                  colors=use_colors)
 
 
