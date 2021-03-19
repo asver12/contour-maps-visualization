@@ -211,7 +211,6 @@ def plot_image(ax, distributions,
     :param ylabel:
     :return:
     """
-
     if contours or contour_lines or pie_charts or crosses:
         limits = helper.get_limits(distributions, xlim, ylim)
         z_list = helper.generate_distribution_grids(distributions, limits=limits)
