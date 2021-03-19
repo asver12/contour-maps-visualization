@@ -10,10 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 def generate_contour_lines(ax, X, distribution_limits, contour_lines_colorscheme, contour_lines_method="equal_density",
-                           contour_lines_weighted=True, num_of_levels=8, borders=None, linewidth=2):
+                           contour_lines_weighted=True, num_of_levels=8, borders=None, linewidth=2, levels=None):
     if borders is None:
         borders = [0.5, 1.]
-    levels = get_iso_levels(X, contour_lines_method, num_of_levels + 1)
+    if levels is None:
+        levels = get_iso_levels(X, contour_lines_method, num_of_levels + 1)
+    else:
+        num_of_levels = len(levels)
     logger.debug("Level: {}".format(levels))
     if contour_lines_weighted:
         contour_lines_colors = get_contour_line_colors(contour_lines_colorscheme, levels, borders)

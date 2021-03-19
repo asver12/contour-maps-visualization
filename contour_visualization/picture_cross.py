@@ -8,6 +8,8 @@ from contour_visualization import helper, picture_contours, color_schemes, hiera
 
 import logging
 
+from contour_visualization.Gaussian import Gaussian
+
 logger = logging.getLogger(__name__)
 
 
@@ -539,6 +541,9 @@ def generate_cross(axis, line_1, line_2, colors_1, colors_2, *args, **kwargs):
 def generate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%", same_broad=True,
                      length_mutliplier=2. * np.sqrt(2.), borders=None,
                      *args, **kwargs):
+    if not all([isinstance(gaussian, Gaussian) for gaussian in gaussians]):
+        raise ValueError(
+            "List of Gaussian is expected to be from type gaussian[from contour_visualization.Gaussian import Gaussian]")
     if borders is None:
         borders = [0, 1]
     lower_border = borders[0]
@@ -557,6 +562,28 @@ def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, broad=3, sa
                   blending_operator=hierarchic_blending_operator.porter_duff_source_over, mode="hierarchic",
                   *args,
                   **kwargs):
+    """
+    Axis limits must be set manually. See helper.Limits for more details
+
+    :param ax:
+    :param gaussians:
+    :param z_list:
+    :param z_min:
+    :param z_max:
+    :param colorschemes:
+    :param broad:
+    :param same_broad:
+    :param length_multiplier:
+    :param borders:
+    :param color_space:
+    :param fill:
+    :param cross_fill:
+    :param blending_operator:
+    :param mode:
+    :param args:
+    :param kwargs:
+    :return:
+    """
     if not hasattr(gaussians[0], "cov_matrix"):
         raise AttributeError("[{}] property 'cov_matrix is missing".format(type(gaussians[0])))
     if not hasattr(gaussians[0], "means"):
