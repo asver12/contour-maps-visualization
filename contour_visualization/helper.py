@@ -11,6 +11,8 @@ from contour_visualization.Distribution import Distribution
 
 import logging
 
+from contour_visualization.Gaussian import Gaussian
+
 logger = logging.getLogger(__name__)
 c_handler = logging.StreamHandler()
 c_format = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
@@ -43,14 +45,6 @@ def normalize_2d_array(X, x_min_old, x_max_old, x_min_new, x_max_new, y_min_old=
     x_flatt[:splite] = normalize_array(x_flatt[:splite], x_min_old, x_max_old, x_min_new, x_max_new)
     x_flatt[splite:] = normalize_array(x_flatt[splite:], y_min_old, y_max_old, y_min_new, y_max_new)
     return np.reshape(x_flatt, x_shape, order="F")
-
-
-class Gaussian():
-    def __init__(self, mean, cov):
-        self.gau = multivariate_normal(mean, cov)
-
-    def get(self, x, y):
-        return self.gau.pdf([x, y])
 
 
 def get_gaussian(x_min, x_max, y_min, y_max, mean=None, cov=None, size=500000):
@@ -96,10 +90,12 @@ def get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, 
     """
     mu_x_1 = random.randint(int(x_min * scale_factor), int(x_max * scale_factor))
     mu_y_1 = random.randint(int(y_min * scale_factor), int(y_max * scale_factor))
-    cov = np.matrix([[random.randint(variance_min, variance_max), random.randint(variance_min, variance_max)],
+    cov = np.array([[random.randint(variance_min, variance_max), random.randint(variance_min, variance_max)],
                      [random.randint(variance_min, variance_max), random.randint(variance_min, variance_max)]])
     cov = np.dot(cov, cov.transpose())
-    return get_gaussian(x_min, x_max, y_min, y_max, [mu_x_1, mu_y_1], cov, size)
+    gau = Gaussian([mu_x_1, mu_y_1], np.array(cov), size=size)
+    logger.debug(f"Gaussian: {gau}")
+    return gau
 
 
 Limits = namedtuple("Limits", ["x_min", "x_max", "y_min", "y_max"])
@@ -151,7 +147,7 @@ def generate_gaussians_xyz(gaussians):
 def generate_random_gaussians(num=2, x_min=-10, x_max=10, y_min=-10, y_max=10, variance_min=2, variance_max=10,
                               size=200,
                               scale_factor=0.6):
-    return [get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, size, scale_factor)[2] for _ in
+    return [get_random_gaussian(x_min, x_max, y_min, y_max, variance_min, variance_max, size, scale_factor) for _ in
             range(num)]
 
 

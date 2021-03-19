@@ -63,14 +63,14 @@ class Gaussian(Distribution):
             logger.warning("No means defined using default {}".format(means))
         elif len(means) != 2:
             raise ValueError("len({}) != 2".format(means))
-        self.means = means
+        self.means = np.asarray(means)
 
         if cov_matrix is None:
             cov_matrix = [[1, 0], [0, 1]]
             logger.warning("No covariance-matrix defined. Using default {}".format(cov_matrix))
         elif len(cov_matrix) != 2 and any([len(cov_matrix[i]) != 2 for i in [0, 1]]):
             raise ValueError("{}.shape != (2,2)".format(cov_matrix))
-        self.cov_matrix = cov_matrix
+        self.cov_matrix = np.array(cov_matrix)
         self.gau = multivariate_normal(self.means, self.cov_matrix)
         if "x_min" not in kwargs.keys():
             min_values = -4 * sqrt(cov_matrix[0][0]) + means[0], -4 * sqrt(cov_matrix[1][1]) + means[1]

@@ -49,10 +49,22 @@ def get_intersection(polys):
 
 
 def generate_polygons(rectangle_1, colors, z_weights):
-    for first_point, second_point, color, z_weight in zip(rectangle_1[:-1], rectangle_1[1:], colors, z_weights):
-        poly = (convert_to_int(first_point[0]), convert_to_int(second_point[0]), convert_to_int(second_point[1]),
-                convert_to_int(first_point[1]))
-        yield poly, color, z_weight
+    r_point = rectangle_1[0]
+    c_point = colors[0]
+    z_point = z_weights[0]
+
+    for point, color, z_weight in zip(rectangle_1[1:], [*colors[1:], None], [*z_weights[1:], None]):
+        if not np.array_equal(c_point, color):
+            poly = (convert_to_int(r_point[0]), convert_to_int(point[0]), convert_to_int(point[1]),
+                    convert_to_int(r_point[1]))
+            yield poly, c_point, z_point
+            r_point = point
+            c_point = color
+            z_point = z_weight
+
+
+def join_inner_polys(crosses):
+    return crosses
 
 
 def generate_polys(cross_lines):
@@ -158,22 +170,12 @@ def fill_between_lines(axis, cross_lines, blending_operator=hierarchic_blending_
             logger.debug("z[{}]: {}".format(region[2], z_weig))
         color = mix_colors(col, z_weig, mode=mode, blending_operator=blending_operator, color_space=color_space)
         axis.add_patch(Polygon([convert_to_float(point) for point in region[0]], closed=True,
-                               fill=True, edgecolor=color, facecolor=color, aa=True, linewidth=0.))
+                               fill=True, edgecolor=None, facecolor=color, aa=True, linewidth=0.))
 
 
-def generate_line(axis, line, color_points=None, borders=None, fill=True, linewidth=0., use_colors=True):
-    if borders is None:
-        borders = [0.5, 1]
-    if color_points is None:
-        contour_lines_colorscheme = color_schemes.get_colorbrewer_schemes()[0]
-        color_points = contour_lines_colorscheme["colorscheme"](
-            contour_lines_colorscheme["colorscheme_name"],
-            helper.norm_levels(np.linspace(0, 1, len(line) - 1), *borders), lvl_white=0)
-    points = np.array(list(zip(line[:-1], line[1:])))
-    logger.debug("Points: {}".format(points))
+def generate_line(axis, points, color_points=None, fill=True, linewidth=0., use_colors=True):
     for j, i in enumerate(points):
-        idx = [0, 2, 3, 1]
-        axis.add_patch(Polygon(np.array(i).reshape(4, 2)[idx], closed=True,
+        axis.add_patch(Polygon(np.array(i).reshape(-1, 2), closed=True,
                                fill=fill, edgecolor=color_points[j] if use_colors else "black",
                                facecolor=color_points[j] if use_colors else "black", aa=True,
                                linewidth=linewidth))
@@ -415,6 +417,7 @@ def get_cross(gaussian, colorscheme, min_value=0., max_value=1., broad="5%", sam
     # since eigenvectors are orthogonal to each other just change them for the direction
     rectangle_1 = generate_rectangle_from_line(line_short, eigenvectors[1], broad_short)
     rectangle_2 = generate_rectangle_from_line(line_long, eigenvectors[0], broad_long)
+
     return rectangle_1, rectangle_2, colors_short, colors_long, z_lvl_short, z_lvl_long
 
 
@@ -448,11 +451,91 @@ def get_broad(broad, line_short, line_long, same_length=True):
     return broad_short, broad_long
 
 
+def get_middlepoint_of_crossline(colors):
+    for i, elems in enumerate(zip(colors[:-1], colors[1:])):
+        if all([i[0] == i[1] for i in zip(elems[0], elems[1])]):
+            return i
+    return None
+
+
+def square_union(square_1, square_2):
+    subj = ([convert_to_int(i) for i in square_1],)
+    clip = [convert_to_int(i) for i in square_2]
+    pc = pyclipper.Pyclipper()
+    pc.AddPath(clip, pyclipper.PT_CLIP, True)
+    pc.AddPaths(subj, pyclipper.PT_SUBJECT, True)
+    solution = pc.Execute(pyclipper.CT_UNION, pyclipper.PFT_EVENODD, pyclipper.PFT_EVENODD)[0]
+    logger.debug(f"Solution Union:{solution} | {len(solution)}")
+    return [convert_to_float(s) for s in solution]
+
+
+def square_difference(square_1, square_2):
+    subj = ([convert_to_int(i) for i in square_1],)
+    clip = [convert_to_int(i) for i in square_2]
+    pc = pyclipper.Pyclipper()
+    pc.AddPaths(subj, pyclipper.PT_SUBJECT, True)
+    pc.AddPath(clip, pyclipper.PT_CLIP, True)
+    solution = pc.Execute(pyclipper.CT_DIFFERENCE, pyclipper.PFT_EVENODD, pyclipper.PFT_EVENODD)
+    logger.debug(f"Solution Union:{solution} | {len(solution)}")
+    return [[convert_to_float(s) for s in i] for i in solution]
+
+
+def generate_squares(line, color_points=None, borders=None):
+    if borders is None:
+        borders = [0.5, 1]
+    if color_points is None:
+        contour_lines_colorscheme = color_schemes.get_colorbrewer_schemes()[0]
+        color_points = contour_lines_colorscheme["colorscheme"](
+            contour_lines_colorscheme["colorscheme_name"],
+            helper.norm_levels(np.linspace(0, 1, len(line)), *borders), lvl_white=0)
+
+    idx = [0, 2, 3, 1]
+    return [np.array(i).reshape(-1, 2)[idx] for i in (zip(line[:-1], line[1:]))], color_points
+
+
+def join_squares(squares_1, squares_2, colors_1, colors_2, middle_1, middle_2):
+    middle_union = square_union(line_1[middle_1:middle_1 + 3], line_2[middle_2:middle_2 + 3])
+
+
+def order_points(square_1, square_2):
+    return square_1[0], square_2[1], square_2[2], square_1[3]
+
+
 def generate_cross(axis, line_1, line_2, colors_1, colors_2, *args, **kwargs):
     logger.debug("Len Line 1: {}".format(len(line_1)))
     logger.debug("Len Colors 1: {}".format(len(colors_1)))
-    generate_line(axis, line_1, colors_1, *args, helper.filter_kwargs(generate_line, **kwargs))
-    generate_line(axis, line_2, colors_2, *args, helper.filter_kwargs(generate_line, **kwargs))
+
+    squares_1, colors_1 = generate_squares(line_1, colors_1, **helper.filter_kwargs(generate_squares, **kwargs))
+    logger.debug("Squares Line 1: {}".format(squares_1))
+    squares_2, colors_2 = generate_squares(line_2, colors_2, **helper.filter_kwargs(generate_squares, **kwargs))
+    logger.debug("Squares Line 2: {}".format(squares_1))
+
+    # for the most inner square its possible to be hidden. Tries to avoid this by drawing the union explicit
+    middle_1, middle_2 = get_middlepoint_of_crossline(colors_1), get_middlepoint_of_crossline(colors_2)
+    if middle_1 and middle_2:
+        inner_union = square_union(order_points(squares_1[middle_1], squares_1[middle_1 + 1]),
+                                  order_points(squares_2[middle_2], squares_2[middle_2 + 1]))
+        squares_2[middle_2 + 1] = inner_union
+
+        squares_1[middle_1 - 1] = square_difference(squares_1[middle_1 - 1], inner_union)[0]
+        squares_1[middle_1 + 2] = square_difference(squares_1[middle_1 + 2], inner_union)[0]
+        squares_2[middle_2 - 1] = square_difference(squares_2[middle_2 - 1], inner_union)[0]
+        squares_2[middle_2 + 2] = square_difference(squares_2[middle_2 + 2], inner_union)[0]
+
+        del squares_1[middle_1:middle_1 + 2]
+        del colors_1[middle_1:middle_1 + 2]
+        del squares_2[middle_2]
+        #del colors_2[middle_2]
+
+        squares_1.extend(squares_2)
+        colors_1.extend(colors_2)
+        # generate_line(axis, squares_2, colors_2, *args, **helper.filter_kwargs(generate_line, **kwargs))
+        generate_line(axis, squares_1, colors_1, *args, **helper.filter_kwargs(generate_line, **kwargs))
+
+        # generate_line(axis, [inner_union, ], [colors_2[middle_2], ], *args,
+        #                 **helper.filter_kwargs(generate_line, **kwargs))
+
+    # generate_line(axis, middle_difference[0:2], colors_2[middle_2+2:middle_2+ 2 + len(middle_difference[0:2])], *args,**helper.filter_kwargs(generate_line, **kwargs))
 
 
 def generate_crosses(gaussians, z_list, z_min, z_max, colorschemes, broad="50%", same_broad=True,
@@ -512,7 +595,7 @@ def input_crosses(ax, gaussians, z_list, z_min, z_max, colorschemes, broad=3, sa
     for cross in cross_lines:
         generate_cross(ax, *cross[:4], fill=cross_fill, *args, **kwargs)
     if fill:
-        fill_between_lines(ax, cross_lines, blending_operator, mode, color_space=color_space)
+        fill_between_lines(ax, cross_lines, blending_operator=blending_operator, mode=mode, color_space=color_space)
 
 
 def convert_color_to_rgb(color, color_space="lab"):
@@ -521,3 +604,73 @@ def convert_color_to_rgb(color, color_space="lab"):
 
 def convert_color_to_colorspace(color, color_space="lab"):
     return picture_contours.convert_rgb_image(np.array([[color]]), color_space)[0][0]
+
+
+if __name__ == "__main__":
+    color_1 = [[0.935015012837456, 0.9518871110007866, 0.9989459345301984, 1.0],
+               [0.774684642177907, 0.8580297756084815, 0.935667394354218, 1.0],
+               [0.6148243401547497, 0.7895306258135265, 0.8813212052390674, 1.0],
+               [0.25604907429903784, 0.5699377677370413, 0.7750017590579681, 1.0],
+               [0.12554957919405454, 0.43819365744682115, 0.7059417360567997, 1.0],
+               [0.03137254901960784, 0.27020187545493846, 0.5796378352719668, 1.0],
+               [0.03137254901960784, 0.27020187545493846, 0.5796378352719668, 1.0],
+               [0.12554957919405454, 0.43819365744682115, 0.7059417360567997, 1.0],
+               [0.25604907429903784, 0.5699377677370413, 0.7750017590579681, 1.0],
+               [0.6148243401547497, 0.7895306258135265, 0.8813212052390674, 1.0],
+               [0.774684642177907, 0.8580297756084815, 0.935667394354218, 1.0],
+               [0.935015012837456, 0.9518871110007866, 0.9989459345301984, 1.0]]
+    line_1 = [((6.324555320336759, -0.632455532033676), (6.324555320336759, 0.632455532033676)),
+              ((3.047285745253166, -0.632455532033676), (3.047285745253166, 0.632455532033676)),
+              ((2.2040117025415977, -0.632455532033676), (2.2040117025415977, 0.632455532033676)),
+              ((1.514060213050315, -0.632455532033676), (1.514060213050315, 0.632455532033676)),
+              ((1.0540925533894603, -0.632455532033676), (1.0540925533894603, 0.632455532033676)),
+              ((0.5174636171184623, -0.632455532033676), (0.5174636171184623, 0.632455532033676)),
+              ((0.0, -0.632455532033676), (0.0, 0.632455532033676)),
+              ((-0.5174636171184621, -0.632455532033676), (-0.5174636171184621, 0.632455532033676)),
+              ((-1.0540925533894598, -0.632455532033676), (-1.0540925533894598, 0.632455532033676)),
+              ((-1.514060213050315, -0.632455532033676), (-1.514060213050315, 0.632455532033676)),
+              ((-2.2040117025415977, -0.632455532033676), (-2.2040117025415977, 0.632455532033676)),
+              ((-3.0472857452531654, -0.632455532033676), (-3.0472857452531654, 0.632455532033676)),
+              ((-6.324555320336759, -0.632455532033676), (-6.324555320336759, 0.632455532033676))]
+    color_2 = [[0.935015012837456, 0.9518871110007866, 0.9989459345301984, 1.0],
+               [0.774684642177907, 0.8580297756084815, 0.935667394354218, 1.0],
+               [0.6148243401547497, 0.7895306258135265, 0.8813212052390674, 1.0],
+               [0.25604907429903784, 0.5699377677370413, 0.7750017590579681, 1.0],
+               [0.12554957919405454, 0.43819365744682115, 0.7059417360567997, 1.0],
+               [0.03137254901960784, 0.27020187545493846, 0.5796378352719668, 1.0],
+               [0.03137254901960784, 0.27020187545493846, 0.5796378352719668, 1.0],
+               [0.12554957919405454, 0.43819365744682115, 0.7059417360567997, 1.0],
+               [0.25604907429903784, 0.5699377677370413, 0.7750017590579681, 1.0],
+               [0.6148243401547497, 0.7895306258135265, 0.8813212052390674, 1.0],
+               [0.774684642177907, 0.8580297756084815, 0.935667394354218, 1.0],
+               [0.935015012837456, 0.9518871110007866, 0.9989459345301984, 1.0]]
+    line_2 = [((0.632455532033676, -6.324555320336759), (-0.632455532033676, -6.324555320336759)),
+              ((0.632455532033676, -3.047285745253166), (-0.632455532033676, -3.047285745253166)),
+              ((0.632455532033676, -2.2040117025415977), (-0.632455532033676, -2.2040117025415977)),
+              ((0.632455532033676, -1.514060213050315), (-0.632455532033676, -1.514060213050315)),
+              ((0.632455532033676, -1.0540925533894603), (-0.632455532033676, -1.0540925533894603)),
+              ((0.632455532033676, -0.5174636171184623), (-0.632455532033676, -0.5174636171184623)),
+              ((0.632455532033676, 0.0), (-0.632455532033676, 0.0)),
+              ((0.632455532033676, 0.5174636171184621), (-0.632455532033676, 0.5174636171184621)),
+              ((0.632455532033676, 1.0540925533894598), (-0.632455532033676, 1.0540925533894598)),
+              ((0.632455532033676, 1.514060213050315), (-0.632455532033676, 1.514060213050315)),
+              ((0.632455532033676, 2.2040117025415977), (-0.632455532033676, 2.2040117025415977)),
+              ((0.632455532033676, 3.0472857452531654), (-0.632455532033676, 3.0472857452531654)),
+              ((0.632455532033676, 6.324555320336759), (-0.632455532033676, 6.324555320336759))]
+    middle_1 = get_middlepoint_of_crossline(color_1)
+    middle_2 = get_middlepoint_of_crossline(color_2)
+    line_1 = line_1[middle_1:middle_1 + 3]
+    line_2 = line_2[middle_2:middle_2 + 3]
+    print(line_1)
+    print(line_2)
+    subj = ((convert_to_int(line_1[0][0]), convert_to_int(line_1[-1][0]), convert_to_int(line_1[-1][1]),
+             convert_to_int(line_1[0][1])),)
+    clip = (convert_to_int(line_2[0][0]), convert_to_int(line_2[-1][0]), convert_to_int(line_2[-1][1]),
+            convert_to_int(line_2[0][1]))
+    print(subj)
+    print(clip)
+    pc = pyclipper.Pyclipper()
+    pc.AddPath(clip, pyclipper.PT_CLIP, True)
+    pc.AddPaths(subj, pyclipper.PT_SUBJECT, True)
+    solution = pc.Execute(pyclipper.CT_UNION, pyclipper.PFT_NONZERO, pyclipper.PFT_NONZERO)[0]
+    print([convert_to_float(solution[0]), convert_to_float(solution[1])])

@@ -6,7 +6,7 @@ from matplotlib.lines import Line2D
 
 from contour_visualization import pie_chart_vis, helper, picture_contours, color_schemes, hierarchic_blending_operator, \
     picture_cross, \
-    picture_contour_lines
+    picture_contour_lines, draw_random_points
 
 import logging
 
@@ -16,6 +16,14 @@ visualizations = ["contour_lines", "contours", "pie_charts", "crosses"]
 
 
 def plot_all_methods(distributions, *args, **kwargs):
+    """
+    plots for a list of distributions all visualizations
+
+    :param distributions:
+    :param args:
+    :param kwargs:
+    :return:
+    """
     plot_images(distributions, contours=True, contour_lines=True, *args, **kwargs)
     plot_images(distributions, pie_charts=True, *args, **kwargs)
     plot_images(distributions, crosses=True, contour_lines=True, *args, **kwargs)
@@ -50,6 +58,7 @@ def plot_image_variations(distribution, plot_titles=False, titles="", colors="",
                ylabel=ylabel, crosses=True, contour_lines=True, *args, **kwargs)
     plot_image(ax[2], distribution, title=title, legend=True, legend_colors=color_legend, xlabel=xlabel,
                ylabel=ylabel, pie_charts=True, *args, **kwargs)
+    return fig, ax
 
 
 def plot_images(distributions, plot_titles=False, titles="", colors="", columns=5, xlabels="", ylabels="", legend=True,
@@ -113,7 +122,7 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
                         ylabel = ylabels[j + i * columns]
                     try:
                         plot_image(ax[j], sub_gaussians[j], *args, title=title, legend=legend,
-                                   legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, **kwargs)
+                                   legend_colors=color_legend, xlabel=xlabel, ylabel=ylabel, *args, **kwargs)
                     except Exception as e:
                         print(e)
             fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
@@ -141,6 +150,8 @@ def plot_image(ax, distributions,
                cross_same_broad=True,
                cross_length_multiplier=2. * np.sqrt(2.),
                cross_borders=None,
+               cross_fill=True,
+               cross_line_width=0.,
                cross_blending_operator=hierarchic_blending_operator.porter_duff_source_over,
                cross_mode="hierarchic",
                pie_charts=False, pie_num=25, pie_angle=90, pie_chart_colors=None, pie_chart_modus="light",
@@ -149,6 +160,9 @@ def plot_image(ax, distributions,
                pie_chart_iso_level=40,
                pie_chart_level_to_cut=1,
                pie_chart_contour_method="equal_density",
+               scatter_points=False,
+               schatter_points_colors=None,
+               scatter_points_num=1000,
                legend=False,
                legend_lw=2,
                legend_colors=None,
@@ -211,27 +225,10 @@ def plot_image(ax, distributions,
     :param ylabel:
     :return:
     """
-    if contours or contour_lines or pie_charts or crosses:
+    if contours or contour_lines or pie_charts or crosses or scatter_points:
         limits = helper.get_limits(distributions, xlim, ylim)
         z_list = helper.generate_distribution_grids(distributions, limits=limits)
         z_min, z_max, z_sum = helper.generate_weights(z_list)
-
-        # # to avoid a stretched y-axis
-        if isinstance(ax, type(plt)):
-            pass  # ax.aspect('equal', adjustable='box')
-        else:
-            ax.set_aspect('equal', adjustable='box')
-        logger.debug("Axis-limits: {}".format(limits))
-        if xlabel:
-            if isinstance(ax, type(plt)):
-                ax.xlabel(xlabel)
-            else:
-                ax.set_xlabel(xlabel)
-        if ylabel:
-            if isinstance(ax, type(plt)):
-                ax.ylabel(ylabel)
-            else:
-                ax.set_ylabel(ylabel)
 
         if not contours:
             if isinstance(ax, type(plt)):
@@ -277,8 +274,9 @@ def plot_image(ax, distributions,
             picture_cross.input_crosses(ax, distributions, z_list, z_min, z_max, cross_colorscheme, cross_width,
                                         cross_same_broad,
                                         cross_length_multiplier,
-                                        cross_borders, linewidth=linewidth,
-                                        blending_operator=cross_blending_operator, mode=cross_mode, color_space=color_space, *args, **kwargs)
+                                        cross_borders, linewidth=cross_line_width, cross_fill=cross_fill,
+                                        blending_operator=cross_blending_operator, mode=cross_mode,
+                                        color_space=color_space, *args, **kwargs)
         if contour_lines:
             if isinstance(contour_line_colorscheme, dict):
                 picture_contour_lines.generate_contour_lines(ax, z_sum, limits,
@@ -304,13 +302,44 @@ def plot_image(ax, distributions,
                                       contour_method=pie_chart_contour_method, scale=pie_chart_scale, set_limit=False,
                                       xlim=xlim, ylim=ylim)
 
+        if scatter_points:
+            logger.debug("Plotting scatter points")
+            if schatter_points_colors is None:
+                schatter_points_colors = contour_colorscheme
+            draw_random_points.input_points(ax, distributions, colorschemes=schatter_points_colors,
+                                            num=scatter_points_num, *args,
+                                            **kwargs)
+
+    if isinstance(ax, type(plt)):
+        ax.xlim((limits.x_min, limits.x_max))
+        ax.ylim((limits.y_min, limits.y_max))
+    else:
+        ax.set_xlim((limits.x_min, limits.x_max), emit=False)
+        ax.set_ylim((limits.y_min, limits.y_max), emit=False)
+    # # to avoid a stretched y-axis
+    if isinstance(ax, type(plt)):
+        pass  # ax.aspect('equal', adjustable='box')
+    else:
+        ax.set_aspect('equal', adjustable='box')
+    logger.debug("Axis-limits: {}".format(limits))
+    if xlabel:
+        if isinstance(ax, type(plt)):
+            ax.xlabel(xlabel)
+        else:
+            ax.set_xlabel(xlabel)
+    if ylabel:
+        if isinstance(ax, type(plt)):
+            ax.ylabel(ylabel)
+        else:
+            ax.set_ylabel(ylabel)
+
 
 def _generate_legend(axis, colors, names=None, legend_lw=2):
     if names is None:
         names = [chr(i + 65) for i in range(len(colors))]
     custom_lines = [Line2D([0], [0], color=colors[i], lw=legend_lw) for i in
                     range(len(colors))]
-    axis.legend(custom_lines, names, frameon=False)
+    axis.legend(custom_lines, names)
 
 
 def _evaluate_colors(colorschemes, number_of_schemes):
