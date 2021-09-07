@@ -17,11 +17,11 @@ def generate_contour_lines(ax, X, distribution_limits, contour_lines_colorscheme
         levels = get_iso_levels(X, contour_lines_method, num_of_levels + 1)
     else:
         num_of_levels = len(levels)
+        levels = get_iso_levels(X, "equal_value", level_targets=levels)
     logger.debug("Level: {}".format(levels))
     if contour_lines_weighted:
         contour_lines_colors = get_contour_line_colors(contour_lines_colorscheme, levels, borders)
     else:
-
         contour_lines_colors = np.repeat(
             contour_lines_colorscheme["colorscheme"](contour_lines_colorscheme["colorscheme_name"],
                                                      [1.], lvl_white=0), num_of_levels + 1, axis=0)
@@ -29,6 +29,7 @@ def generate_contour_lines(ax, X, distribution_limits, contour_lines_colorscheme
 
 
 def plot_contour_lines(ax, X, limits, levels, colors, linewidth=2, *args, **kwargs):
+    contours = find_contour_lines(X, levels)
     contours = find_contour_lines(X, levels)
     for i, color in zip(contours[:len(levels)], colors[:len(levels)]):
         for contour in i:
