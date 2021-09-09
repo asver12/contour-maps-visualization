@@ -55,14 +55,17 @@ def __generate_random_points(gaussians, z_list, z_min, z_max, colorschemes, bord
             gaussian, colorscheme, [z_min_weight, z_max_weight, z_list] in zip(gaussians, colorschemes, z_weights)]
 
 
-def input_points(ax, distributions, *args, **kwargs):
+def input_points(ax, distributions, edge_colors=False, face_colors=True,  *args, **kwargs):
     point_lists = generate_random_points(distributions, *args, **kwargs)
     points = itertools.chain(*[x for x, y in point_lists])
     colors = itertools.chain(*[y for x, y in point_lists])
     point_lists = list(zip(list(points), list(colors)))
     random.shuffle(point_lists)
     for points, colors in point_lists:
-        ax.scatter(*points, c=[colors, ], **helper.filter_kwargs(ax.scatter, **kwargs))
+        ax.scatter(*points,
+                   facecolors=[colors, ] if face_colors else "none",
+                   edgecolors=[colors, ] if edge_colors else "none",
+                   **helper.filter_kwargs(ax.scatter, **kwargs))
 
         # for i in range(len(points)):
         #     print(colors[i])
