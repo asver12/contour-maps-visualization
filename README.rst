@@ -34,7 +34,7 @@ Install submodules with:
     git submodule update --init
 
 Make sure python 3.5 or higher and pip3  are installed.
-Than install the package with:
+Then install the package with:
 
 .. code-block:: console
 
