@@ -95,6 +95,7 @@ def plot_images(distributions, plot_titles=False, titles="", colors="", columns=
         plot_image(ax, distributions[0], title=title, legend=legend, legend_colors=color_legend, xlabel=xlabel,
                    ylabel=ylabel, *args, **kwargs)
         fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top)
+        return fig, ax
     else:
         for i in range(math.ceil(len(distributions) / columns)):
             sub_gaussians = distributions[i * columns:(i + 1) * columns]
