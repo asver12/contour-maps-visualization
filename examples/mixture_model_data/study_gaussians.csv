@@ -1,0 +1,20 @@
+,mean,cov,max,color
+A,[0.66633264 0.11497449],"[[0.006335   0.00092232]
+ [0.00092232 0.00118405]]",17.840992338062414,blue
+B,[0.13258068 0.15041875],"[[0.00294237 0.00198685]
+ [0.00198685 0.00371996]]",12.885229008519138,orange
+C,[0.4708945  0.37585706],"[[ 0.01359861 -0.00120748]
+ [-0.00120748  0.01671238]]",1.5972152892461138,green
+D,[0.41380297 0.17588309],"[[0.00633001 0.00160854]
+ [0.00160854 0.00329547]]",12.879820235652781,purple
+,,,,
+,,,,
+,,,,
+,,stuff to rate,,
+,,"viele haben die farbstufen bei c nicht erkannt. Ich auch nicht. Sie existieren aber, r/f?",,
+,,Wollen wir aussagen wie: C fällt erst beim zweiten Mal schauen auf zählen? Das ist ja sehr subjektiv,,
+,,Die Breite der Linien wird nicht gleich gestellt mit der Breite der Peaks (Statt Höhe),,
+,,"Viele haben nicht mitbekommen, dass es nur gaussians sind",,
+,,farbe wird als gewicht(der gesamtverteilung) interpretiert!,,
+,,überschneidungen falsch,,
+,,isolinien sind nicht immer eindeutig(speziell für unser beispiel schlecht),,
